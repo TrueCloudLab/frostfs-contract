@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+
+SERVICE = frostfs-contract
+export NEOGO ?= $(shell command -v neo-go)
+
+%:
+	dh $@
+
+override_dh_auto_build:
+
+		make all
+
+override_dh_auto_install:
+		install -D -m 0750 -d debian/$(SERVICE)/var/lib/frostfs/contract
+		find . -maxdepth 2 \( -name '*.nef' -o -name 'config.json' \) -exec cp --parents \{\} debian/$(SERVICE)/var/lib/frostfs/contract \;
+
+override_dh_installchangelogs:
+		dh_installchangelogs -k CHANGELOG.md
+
+

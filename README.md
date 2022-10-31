@@ -69,6 +69,16 @@ $ NEOGO=/home/user/neo-go/bin/neo-go make all
 
 Remove compiled files with `make clean` or `make mr_proper` command.
 
+## Building Debian package
+
+To build Debian package containing compiled contracts, run `make debpackage`
+command. Package will install compiled contracts `*_contract.nef` and manifest 
+`config.json` with corresponding directories to `/var/lib/neofs/contract` for 
+further usage.
+It will download and build neo-go, if needed.
+
+To clean package-related files, use `make debclean`.
+
 # Testing
 Smartcontract tests reside in `tests/` directory. To execute test suite
 after applying changes, simply run `make test`.

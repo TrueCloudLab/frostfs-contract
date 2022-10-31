@@ -7,8 +7,16 @@ export GOBIN ?= $(shell pwd)/bin
 NEOGO ?= $(GOBIN)/cli
 VERSION ?= $(shell git describe --tags --dirty --match "v*" --always --abbrev=8 2>/dev/null || cat VERSION 2>/dev/null || echo "develop")
 
+
+# .deb package versioning
+OS_RELEASE = $(shell lsb_release -cs)
+PKG_VERSION ?= $(shell echo $(VERSION) | sed "s/^v//" | \
+			sed -E "s/(.*)-(g[a-fA-F0-9]{6,8})(.*)/\1\3~\2/" | \
+			sed "s/-/~/")-${OS_RELEASE}
+
 .PHONY: all build clean test neo-go
 .PHONY: alphabet mainnet morph nns sidechain
+.PHONY: debpackage debclean
 build: neo-go all
 all: sidechain mainnet
 sidechain: alphabet morph nns
@@ -58,3 +66,15 @@ archive: build
 	@tar --transform "s|^./|frostfs-contract-$(VERSION)/|" \
 		-czf frostfs-contract-$(VERSION).tar.gz \
 		$(shell find . -name '*.nef' -o -name 'config.json')
+
+# Package for Debian
+debpackage:
+	dch --package frostfs-contract \
+			--controlmaint \
+			--newversion $(PKG_VERSION) \
+			--distribution $(OS_RELEASE) \
+			"Please see CHANGELOG.md for code changes for $(VERSION)"
+	dpkg-buildpackage --no-sign -b
+
+debclean:
+	dh clean		
