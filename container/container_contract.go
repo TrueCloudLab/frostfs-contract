@@ -551,7 +551,7 @@ func GetContainerSize(id []byte) containerSizes {
 }
 
 // ListContainerSizes method returns the IDs of container size estimations
-// that has been registered for the specified epoch.
+// that have been registered for the specified epoch.
 func ListContainerSizes(epoch int) [][]byte {
 	ctx := storage.GetReadOnlyContext()
 
@@ -580,6 +580,19 @@ func ListContainerSizes(epoch int) [][]byte {
 	}
 
 	return result
+}
+
+// IterateContainerSizes method returns iterator over container size estimations
+// that have been registered for the specified epoch.
+func IterateContainerSizes(epoch int) iterator.Iterator {
+	ctx := storage.GetReadOnlyContext()
+
+	var buf interface{} = epoch
+
+	key := []byte(estimateKeyPrefix)
+	key = append(key, buf.([]byte)...)
+
+	return storage.Find(ctx, key, storage.DeserializeValues)
 }
 
 // NewEpoch method removes all container size estimations from epoch older than
