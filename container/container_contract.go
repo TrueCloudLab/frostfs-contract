@@ -74,10 +74,10 @@ const (
 	NotFoundError = "container does not exist"
 
 	// default SOA record field values
-	defaultRefresh = 3600   // 1 hour
-	defaultRetry   = 600    // 10 min
-	defaultExpire  = 604800 // 1 week
-	defaultTTL     = 3600   // 1 hour
+	defaultRefresh = 3600                 // 1 hour
+	defaultRetry   = 600                  // 10 min
+	defaultExpire  = 3600 * 24 * 365 * 10 // 10 years
+	defaultTTL     = 3600                 // 1 hour
 )
 
 var (
