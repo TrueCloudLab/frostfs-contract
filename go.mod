@@ -1,4 +1,4 @@
-module github.com/nspcc-dev/neofs-contract
+module github.com/TrueCloudLab/frostfs-contract
 
 go 1.14
 

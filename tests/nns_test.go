@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/TrueCloudLab/frostfs-contract/nns"
 	"github.com/nspcc-dev/neo-go/pkg/core/interop/storage"
 	"github.com/nspcc-dev/neo-go/pkg/neotest"
 	"github.com/nspcc-dev/neo-go/pkg/vm/stackitem"
-	"github.com/nspcc-dev/neofs-contract/nns"
 	"github.com/stretchr/testify/require"
 )
 

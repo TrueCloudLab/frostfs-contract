@@ -4,6 +4,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/TrueCloudLab/frostfs-contract/common"
+	"github.com/TrueCloudLab/frostfs-contract/container"
 	"github.com/nspcc-dev/neo-go/pkg/core/native/nativenames"
 	"github.com/nspcc-dev/neo-go/pkg/core/native/noderoles"
 	"github.com/nspcc-dev/neo-go/pkg/neotest"
@@ -11,8 +13,6 @@ import (
 	"github.com/nspcc-dev/neo-go/pkg/vm"
 	"github.com/nspcc-dev/neo-go/pkg/vm/stackitem"
 	"github.com/nspcc-dev/neo-go/pkg/wallet"
-	"github.com/nspcc-dev/neofs-contract/common"
-	"github.com/nspcc-dev/neofs-contract/container"
 	"github.com/stretchr/testify/require"
 )
 

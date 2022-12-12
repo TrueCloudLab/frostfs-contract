@@ -6,13 +6,13 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/TrueCloudLab/frostfs-contract/container"
 	"github.com/mr-tron/base58"
 	"github.com/nspcc-dev/neo-go/pkg/crypto/keys"
 	"github.com/nspcc-dev/neo-go/pkg/encoding/address"
 	"github.com/nspcc-dev/neo-go/pkg/neotest"
 	"github.com/nspcc-dev/neo-go/pkg/util"
 	"github.com/nspcc-dev/neo-go/pkg/vm/stackitem"
-	"github.com/nspcc-dev/neofs-contract/container"
 	"github.com/stretchr/testify/require"
 )
 

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/TrueCloudLab/frostfs-contract/neofs"
 	"github.com/nspcc-dev/neo-go/pkg/core/native/nativenames"
 	"github.com/nspcc-dev/neo-go/pkg/crypto/keys"
 	"github.com/nspcc-dev/neo-go/pkg/neotest"
@@ -14,7 +15,6 @@ import (
 	"github.com/nspcc-dev/neo-go/pkg/vm"
 	"github.com/nspcc-dev/neo-go/pkg/vm/stackitem"
 	"github.com/nspcc-dev/neo-go/pkg/wallet"
-	"github.com/nspcc-dev/neofs-contract/neofs"
 	"github.com/stretchr/testify/require"
 )
 

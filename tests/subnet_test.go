@@ -5,12 +5,12 @@ import (
 	"path"
 	"testing"
 
+	"github.com/TrueCloudLab/frostfs-contract/common"
+	"github.com/TrueCloudLab/frostfs-contract/subnet"
 	"github.com/nspcc-dev/neo-go/pkg/neotest"
 	"github.com/nspcc-dev/neo-go/pkg/util"
 	"github.com/nspcc-dev/neo-go/pkg/vm"
 	"github.com/nspcc-dev/neo-go/pkg/vm/stackitem"
-	"github.com/nspcc-dev/neofs-contract/common"
-	"github.com/nspcc-dev/neofs-contract/subnet"
 	"github.com/stretchr/testify/require"
 )
 

@@ -1,13 +1,13 @@
 package proxy
 
 import (
+	"github.com/TrueCloudLab/frostfs-contract/common"
 	"github.com/nspcc-dev/neo-go/pkg/interop"
 	"github.com/nspcc-dev/neo-go/pkg/interop/contract"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/gas"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/management"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/neo"
 	"github.com/nspcc-dev/neo-go/pkg/interop/runtime"
-	"github.com/nspcc-dev/neofs-contract/common"
 )
 
 // OnNEP17Payment is a callback for NEP-17 compatible native GAS contract.

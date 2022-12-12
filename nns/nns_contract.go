@@ -9,6 +9,7 @@ must be added by committee before a new domain name can be registered.
 package nns
 
 import (
+	"github.com/TrueCloudLab/frostfs-contract/common"
 	"github.com/nspcc-dev/neo-go/pkg/interop"
 	"github.com/nspcc-dev/neo-go/pkg/interop/contract"
 	"github.com/nspcc-dev/neo-go/pkg/interop/iterator"
@@ -19,7 +20,6 @@ import (
 	"github.com/nspcc-dev/neo-go/pkg/interop/runtime"
 	"github.com/nspcc-dev/neo-go/pkg/interop/storage"
 	"github.com/nspcc-dev/neo-go/pkg/interop/util"
-	"github.com/nspcc-dev/neofs-contract/common"
 )
 
 // Prefixes used for contract data storage.

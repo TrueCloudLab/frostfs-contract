@@ -74,7 +74,7 @@ Smartcontract tests reside in `tests/` directory. To execute test suite
 after applying changes, simply run `make test`.
 ```
 $ make test
-ok      github.com/nspcc-dev/neofs-contract/tests       0.462s
+ok      github.com/TrueCloudLab/frostfs-contract/tests       0.462s
 ```
 
 # NeoFS API compatibility
