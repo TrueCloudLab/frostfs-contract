@@ -15,29 +15,29 @@ minting of NEOFS tokens in Balance contract. Withdraw locks some NEOFS tokens
 in a special lock account. When NeoFS contract transfers GAS assets back to the
 user, the lock account is destroyed with burn operation.
 
-Contract notifications
+# Contract notifications
 
 Transfer notification. This is a NEP-17 standard notification.
 
-  Transfer:
-    - name: from
-      type: Hash160
-    - name: to
-      type: Hash160
-    - name: amount
-      type: Integer
+	Transfer:
+	  - name: from
+	    type: Hash160
+	  - name: to
+	    type: Hash160
+	  - name: amount
+	    type: Integer
 
 TransferX notification. This is an enhanced transfer notification with details.
 
-  TransferX:
-    - name: from
-      type: Hash160
-    - name: to
-      type: Hash160
-    - name: amount
-      type: Integer
-    - name: details
-      type: ByteArray
+	TransferX:
+	  - name: from
+	    type: Hash160
+	  - name: to
+	    type: Hash160
+	  - name: amount
+	    type: Integer
+	  - name: details
+	    type: ByteArray
 
 Lock notification. This notification is produced when a lock account is
 created. It contains information about the mainchain transaction that has produced
@@ -45,35 +45,34 @@ the asset lock, the address of the lock account and the NeoFS epoch number until
 lock account is valid. Alphabet nodes of the Inner Ring catch notification and initialize
 Cheque method invocation of NeoFS contract.
 
-  Lock:
-    - name: txID
-      type: ByteArray
-    - name: from
-      type: Hash160
-    - name: to
-      type: Hash160
-    - name: amount
-      type: Integer
-    - name: until
-      type: Integer
+	Lock:
+	  - name: txID
+	    type: ByteArray
+	  - name: from
+	    type: Hash160
+	  - name: to
+	    type: Hash160
+	  - name: amount
+	    type: Integer
+	  - name: until
+	    type: Integer
 
 Mint notification. This notification is produced when user balance is
 replenished from deposit in the mainchain.
 
-  Mint:
-   - name: to
-     type: Hash160
-   - name: amount
-     type: Integer
-
+	Mint:
+	 - name: to
+	   type: Hash160
+	 - name: amount
+	   type: Integer
 
 Burn notification. This notification is produced after user balance is reduced
 when NeoFS contract has transferred GAS assets back to the user.
 
-  Burn:
-    - name: from
-      type: Hash160
-    - name: amount
-      type: Integer
+	Burn:
+	  - name: from
+	    type: Hash160
+	  - name: amount
+	    type: Integer
 */
 package balance

@@ -15,7 +15,7 @@ the multisignature transaction. Therefore, NeoVM executes Verify method of the
 contract and if invocation is verified, Processing contract pays for the
 execution.
 
-Contract notifications
+# Contract notifications
 
 Processing contract does not produce notifications to process.
 */

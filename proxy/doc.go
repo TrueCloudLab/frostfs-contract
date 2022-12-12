@@ -14,7 +14,7 @@ Proxy contract is used as the first signer in a multisignature transaction.
 Therefore, NeoVM executes Verify method of the contract; and if invocation is
 verified, Proxy contract pays for the execution.
 
-Contract notifications
+# Contract notifications
 
 Proxy contract does not produce notifications to process.
 */

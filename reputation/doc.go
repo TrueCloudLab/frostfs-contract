@@ -10,7 +10,7 @@ During settlement process, Alphabet nodes fetch all DataAuditResult structures
 from the epoch and execute balance transfers from data owners to Storage and
 Inner Ring nodes if data audit succeeds.
 
-Contract notifications
+# Contract notifications
 
 Reputation contract does not produce notifications to process.
 */

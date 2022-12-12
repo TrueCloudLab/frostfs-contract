@@ -13,7 +13,7 @@ by invoking Bind or Unbind methods of NeoFS contract in the mainchain. After tha
 Alphabet nodes produce multisigned AddKey and RemoveKey invocations of NeoFSID
 contract.
 
-Contract notifications
+# Contract notifications
 
 NeoFSID contract does not produce notifications to process.
 */

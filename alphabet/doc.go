@@ -14,7 +14,7 @@ one of the alphabetical contracts to emit GAS. To vote for a new list of side
 chain committee, alphabet nodes of the Inner Ring create multisignature transactions
 for each alphabet contract.
 
-Contract notifications
+# Contract notifications
 
 Alphabet contract does not produce notifications to process.
 */

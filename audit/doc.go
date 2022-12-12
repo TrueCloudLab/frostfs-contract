@@ -15,7 +15,7 @@ nodes send a stable marshaled version of the DataAuditResult structure to the
 contract. When Alphabet nodes of the Inner Ring perform settlement operations,
 they make a list and get these AuditResultStructures from the audit contract.
 
-Contract notifications
+# Contract notifications
 
 Audit contract does not produce notifications to process.
 */
