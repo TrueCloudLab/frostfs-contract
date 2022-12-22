@@ -1,5 +1,5 @@
 name: "FrostFS Container"
-safemethods: ["count", "get", "owner", "list", "eACL", "getContainerSize", "listContainerSizes", "iterateContainerSizes", "version"]
+safemethods: ["count", "containersOf", "get", "owner", "list", "eACL", "getContainerSize", "listContainerSizes", "iterateContainerSizes", "version"]
 permissions:
   - methods: ["update", "addKey", "transferX",
                "register", "addRecord", "deleteRecords"]

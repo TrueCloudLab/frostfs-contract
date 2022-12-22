@@ -62,6 +62,8 @@ const (
 
 	singleEstimatePrefix = "est"
 	estimateKeyPrefix    = "cnr"
+	containerKeyPrefix   = 'x'
+	ownerKeyPrefix       = 'o'
 	estimatePostfixSize  = 10
 	// CleanupDelta contains the number of the last epochs for which container estimations are present.
 	CleanupDelta = 3
@@ -93,6 +95,26 @@ func _deploy(data interface{}, isUpdate bool) {
 	if isUpdate {
 		args := data.([]interface{})
 		common.CheckVersion(args[len(args)-1].(int))
+
+		it := storage.Find(ctx, []byte{}, storage.None)
+		for iterator.Next(it) {
+			item := iterator.Value(it).(struct {
+				key   []byte
+				value []byte
+			})
+
+			// Migrate container.
+			if len(item.key) == containerIDSize {
+				storage.Delete(ctx, item.key)
+				storage.Put(ctx, append([]byte{containerKeyPrefix}, item.key...), item.value)
+			}
+
+			// Migrate owner-cid map.
+			if len(item.key) == 25 /* owner id size */ +containerIDSize {
+				storage.Delete(ctx, item.key)
+				storage.Put(ctx, append([]byte{ownerKeyPrefix}, item.key...), item.value)
+			}
+		}
 		return
 	}
 
@@ -391,15 +413,22 @@ func Owner(containerID []byte) []byte {
 func Count() int {
 	count := 0
 	ctx := storage.GetReadOnlyContext()
-	it := storage.Find(ctx, []byte{}, storage.KeysOnly)
+	it := storage.Find(ctx, []byte{containerKeyPrefix}, storage.KeysOnly)
 	for iterator.Next(it) {
-		key := iterator.Value(it).([]byte)
-		// V2 format
-		if len(key) == containerIDSize {
-			count++
-		}
+		count++
 	}
 	return count
+}
+
+// ContainersOf iterates over all container IDs owned by the specified owner.
+// If owner is nil, it iterates over all containers.
+func ContainersOf(owner []byte) iterator.Iterator {
+	ctx := storage.GetReadOnlyContext()
+	key := []byte{ownerKeyPrefix}
+	if len(owner) != 0 {
+		key = append(key, owner...)
+	}
+	return storage.Find(ctx, key, storage.ValuesOnly)
 }
 
 // List method returns a list of all container IDs owned by the specified owner.
@@ -412,7 +441,7 @@ func List(owner []byte) [][]byte {
 
 	var list [][]byte
 
-	it := storage.Find(ctx, owner, storage.ValuesOnly)
+	it := storage.Find(ctx, append([]byte{ownerKeyPrefix}, owner...), storage.ValuesOnly)
 	for iterator.Next(it) {
 		id := iterator.Value(it).([]byte)
 		list = append(list, id)
@@ -700,29 +729,30 @@ func Version() int {
 }
 
 func addContainer(ctx storage.Context, id, owner []byte, container Container) {
-	containerListKey := append(owner, id...)
+	containerListKey := append([]byte{ownerKeyPrefix}, owner...)
+	containerListKey = append(containerListKey, id...)
 	storage.Put(ctx, containerListKey, id)
 
-	common.SetSerialized(ctx, id, container)
+	idKey := append([]byte{containerKeyPrefix}, id...)
+	common.SetSerialized(ctx, idKey, container)
 }
 
 func removeContainer(ctx storage.Context, id []byte, owner []byte) {
-	containerListKey := append(owner, id...)
+	containerListKey := append([]byte{ownerKeyPrefix}, owner...)
+	containerListKey = append(containerListKey, id...)
 	storage.Delete(ctx, containerListKey)
 
-	storage.Delete(ctx, id)
+	storage.Delete(ctx, append([]byte{containerKeyPrefix}, id...))
 }
 
 func getAllContainers(ctx storage.Context) [][]byte {
 	var list [][]byte
 
-	it := storage.Find(ctx, []byte{}, storage.KeysOnly)
+	it := storage.Find(ctx, []byte{containerKeyPrefix}, storage.KeysOnly|storage.RemovePrefix)
 	for iterator.Next(it) {
 		key := iterator.Value(it).([]byte) // it MUST BE `storage.KeysOnly`
 		// V2 format
-		if len(key) == containerIDSize {
-			list = append(list, key)
-		}
+		list = append(list, key)
 	}
 
 	return list
@@ -739,7 +769,7 @@ func getEACL(ctx storage.Context, cid []byte) ExtendedACL {
 }
 
 func getContainer(ctx storage.Context, cid []byte) Container {
-	data := storage.Get(ctx, cid)
+	data := storage.Get(ctx, append([]byte{containerKeyPrefix}, cid...))
 	if data != nil {
 		return std.Deserialize(data.([]byte)).(Container)
 	}

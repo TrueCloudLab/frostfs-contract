@@ -103,15 +103,62 @@ func TestContainerCount(t *testing.T) {
 	cnt3 := dummyContainer(acc1)
 	balanceMint(t, cBal, acc1, containerFee*1, []byte{})
 	c.Invoke(t, stackitem.Null{}, "put", cnt3.value, cnt3.sig, cnt3.pub, cnt3.token)
+	checkContainerList(t, c, [][]byte{cnt1.id[:], cnt2.id[:], cnt3.id[:]})
 
 	c.Invoke(t, stackitem.Null{}, "delete", cnt1.id[:], cnt1.sig, cnt1.token)
 	checkCount(t, 2)
+	checkContainerList(t, c, [][]byte{cnt2.id[:], cnt3.id[:]})
 
 	c.Invoke(t, stackitem.Null{}, "delete", cnt2.id[:], cnt2.sig, cnt2.token)
 	checkCount(t, 1)
+	checkContainerList(t, c, [][]byte{cnt3.id[:]})
 
 	c.Invoke(t, stackitem.Null{}, "delete", cnt3.id[:], cnt3.sig, cnt3.token)
 	checkCount(t, 0)
+	checkContainerList(t, c, [][]byte{})
+}
+
+func checkContainerList(t *testing.T, c *neotest.ContractInvoker, expected [][]byte) {
+	t.Run("check with `list`", func(t *testing.T) {
+		s, err := c.TestInvoke(t, "list", nil)
+		require.NoError(t, err)
+		require.Equal(t, 1, s.Len())
+
+		if len(expected) == 0 {
+			_, ok := s.Top().Item().(stackitem.Null)
+			require.True(t, ok)
+			return
+		}
+
+		arr, ok := s.Top().Value().([]stackitem.Item)
+		require.True(t, ok)
+		require.Equal(t, len(expected), len(arr))
+
+		actual := make([][]byte, 0, len(expected))
+		for i := range arr {
+			id, ok := arr[i].Value().([]byte)
+			require.True(t, ok)
+			actual = append(actual, id)
+		}
+		require.ElementsMatch(t, expected, actual)
+	})
+	t.Run("check with `containersOf`", func(t *testing.T) {
+		s, err := c.TestInvoke(t, "containersOf", nil)
+		require.NoError(t, err)
+		require.Equal(t, 1, s.Len())
+
+		iter, ok := s.Top().Value().(*storage.Iterator)
+		require.True(t, ok)
+
+		actual := make([][]byte, 0, len(expected))
+		for iter.Next() {
+			id, ok := iter.Value().Value().([]byte)
+			require.True(t, ok)
+			actual = append(actual, id)
+		}
+		require.ElementsMatch(t, expected, actual)
+	})
+
 }
 
 func TestContainerPut(t *testing.T) {
