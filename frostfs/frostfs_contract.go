@@ -1,4 +1,4 @@
-package neofs
+package frostfs
 
 import (
 	"github.com/TrueCloudLab/frostfs-contract/common"
@@ -85,7 +85,7 @@ func _deploy(data interface{}, isUpdate bool) {
 	storage.Put(ctx, notaryDisabledKey, args.notaryDisabled)
 	if args.notaryDisabled {
 		common.InitVote(ctx)
-		runtime.Log("neofs contract notary disabled")
+		runtime.Log("frostfs contract notary disabled")
 	}
 
 	ln := len(args.config)
@@ -100,7 +100,7 @@ func _deploy(data interface{}, isUpdate bool) {
 		setConfig(ctx, key, val)
 	}
 
-	runtime.Log("neofs: contract initialized")
+	runtime.Log("frostfs: contract initialized")
 }
 
 // Update method updates contract source code and manifest. It can be invoked
@@ -114,7 +114,7 @@ func Update(script []byte, manifest []byte, data interface{}) {
 
 	contract.Call(interop.Hash160(management.Hash), "update",
 		contract.All, script, manifest, common.AppendVersion(data))
-	runtime.Log("neofs contract updated")
+	runtime.Log("frostfs contract updated")
 }
 
 // AlphabetList returns an array of alphabet node keys. It is used in sidechain notary
@@ -205,7 +205,7 @@ func InnerRingCandidateRemove(key interop.PublicKey) {
 // It can be invoked only by the candidate itself.
 //
 // This method transfers fee from a candidate to the contract account.
-// Fee value is specified in NeoFS network config with the key InnerRingCandidateFee.
+// Fee value is specified in FrostFS network config with the key InnerRingCandidateFee.
 func InnerRingCandidateAdd(key interop.PublicKey) {
 	ctx := storage.GetContext()
 
@@ -231,7 +231,7 @@ func InnerRingCandidateAdd(key interop.PublicKey) {
 
 // OnNEP17Payment is a callback for NEP-17 compatible native GAS contract.
 // It takes no more than 9000.0 GAS. Native GAS has precision 8, and
-// NeoFS balance contract has precision 12. Values bigger than 9000.0 can
+// FrostFS balance contract has precision 12. Values bigger than 9000.0 can
 // break JSON limits for integers when precision is converted.
 func OnNEP17Payment(from interop.Hash160, amount int, data interface{}) {
 	rcv := data.(interop.Hash160)
@@ -264,13 +264,13 @@ func OnNEP17Payment(from interop.Hash160, amount int, data interface{}) {
 	runtime.Notify("Deposit", from, amount, rcv, tx.Hash)
 }
 
-// Withdraw initializes gas asset withdraw from NeoFS. It can be invoked only
+// Withdraw initializes gas asset withdraw from FrostFS. It can be invoked only
 // by the specified user.
 //
 // This method produces Withdraw notification to lock assets in the sidechain and
 // transfers withdraw fee from a user account to each Alphabet node. If notary
 // is enabled in the mainchain, fee is transferred to Processing contract.
-// Fee value is specified in NeoFS network config with the key WithdrawFee.
+// Fee value is specified in FrostFS network config with the key WithdrawFee.
 func Withdraw(user interop.Hash160, amount int) {
 	if !runtime.CheckWitness(user) {
 		panic("you should be the owner of the wallet")
@@ -317,7 +317,7 @@ func Withdraw(user interop.Hash160, amount int) {
 }
 
 // Cheque transfers GAS back to the user from the contract account, if assets were
-// successfully locked in NeoFS balance contract. It can be invoked only by
+// successfully locked in FrostFS balance contract. It can be invoked only by
 // Alphabet nodes.
 //
 // This method produces Cheque notification to burn assets in sidechain.
@@ -363,7 +363,7 @@ func Cheque(id []byte, user interop.Hash160, amount int, lockAcc []byte) {
 	runtime.Notify("Cheque", id, user, amount, lockAcc)
 }
 
-// Bind method produces notification to bind the specified public keys in NeoFSID
+// Bind method produces notification to bind the specified public keys in FrostFSID
 // contract in the sidechain. It can be invoked only by specified user.
 //
 // This method produces Bind notification. This method panics if keys are not
@@ -383,7 +383,7 @@ func Bind(user []byte, keys []interop.PublicKey) {
 	runtime.Notify("Bind", user, keys)
 }
 
-// Unbind method produces notification to unbind the specified public keys in NeoFSID
+// Unbind method produces notification to unbind the specified public keys in FrostFSID
 // contract in the sidechain. It can be invoked only by the specified user.
 //
 // This method produces Unbind notification. This method panics if keys are not
@@ -407,7 +407,7 @@ func Unbind(user []byte, keys []interop.PublicKey) {
 // public keys. It can be invoked only by alphabet nodes.
 //
 // This method is used in notary disabled sidechain environment. In this case,
-// the actual alphabet list should be stored in the NeoFS contract.
+// the actual alphabet list should be stored in the FrostFS contract.
 func AlphabetUpdate(id []byte, args []interop.PublicKey) {
 	ctx := storage.GetContext()
 	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
@@ -460,14 +460,14 @@ func AlphabetUpdate(id []byte, args []interop.PublicKey) {
 	runtime.Log("alphabet list has been updated")
 }
 
-// Config returns configuration value of NeoFS configuration. If the key does
+// Config returns configuration value of FrostFS configuration. If the key does
 // not exists, returns nil.
 func Config(key []byte) interface{} {
 	ctx := storage.GetReadOnlyContext()
 	return getConfig(ctx, key)
 }
 
-// SetConfig key-value pair as a NeoFS runtime configuration value. It can be invoked
+// SetConfig key-value pair as a FrostFS runtime configuration value. It can be invoked
 // only by Alphabet nodes.
 func SetConfig(id, key, val []byte) {
 	ctx := storage.GetContext()
@@ -507,7 +507,7 @@ func SetConfig(id, key, val []byte) {
 }
 
 // ListConfig returns an array of structures that contain a key and a value of all
-// NeoFS configuration records. Key and value are both byte arrays.
+// FrostFS configuration records. Key and value are both byte arrays.
 func ListConfig() []record {
 	ctx := storage.GetReadOnlyContext()
 
@@ -542,7 +542,7 @@ func getAlphabetNodes(ctx storage.Context) []interop.PublicKey {
 	return []interop.PublicKey{}
 }
 
-// getConfig returns the installed neofs configuration value or nil if it is not set.
+// getConfig returns the installed frostfs configuration value or nil if it is not set.
 func getConfig(ctx storage.Context, key interface{}) interface{} {
 	postfix := key.([]byte)
 	storageKey := append(configPrefix, postfix...)
@@ -550,7 +550,7 @@ func getConfig(ctx storage.Context, key interface{}) interface{} {
 	return storage.Get(ctx, storageKey)
 }
 
-// setConfig sets a neofs configuration value in the contract storage.
+// setConfig sets a frostfs configuration value in the contract storage.
 func setConfig(ctx storage.Context, key, val interface{}) {
 	postfix := key.([]byte)
 	storageKey := append(configPrefix, postfix...)

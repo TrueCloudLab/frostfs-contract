@@ -15,7 +15,7 @@ sidechain: alphabet morph nns
 
 alphabet_sc = alphabet
 morph_sc = audit balance container neofsid netmap proxy reputation subnet
-mainnet_sc = neofs processing
+mainnet_sc = frostfs processing
 nns_sc = nns
 
 define sc_template

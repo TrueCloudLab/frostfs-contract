@@ -1,4 +1,4 @@
-name: "NeoFS"
+name: "FrostFS"
 safemethods: ["alphabetList", "alphabetAddress", "innerRingCandidates", "config", "listConfig", "version"]
 permissions:
   - methods: ["update", "transfer"]

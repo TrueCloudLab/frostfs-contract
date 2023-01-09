@@ -6,7 +6,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/TrueCloudLab/frostfs-contract/neofs"
+	"github.com/TrueCloudLab/frostfs-contract/frostfs"
 	"github.com/nspcc-dev/neo-go/pkg/core/native/nativenames"
 	"github.com/nspcc-dev/neo-go/pkg/crypto/keys"
 	"github.com/nspcc-dev/neo-go/pkg/neotest"
@@ -18,9 +18,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const neofsPath = "../neofs"
+const frostfsPath = "../frostfs"
 
-func deployNeoFSContract(t *testing.T, e *neotest.Executor, addrProc util.Uint160,
+func deployFrostFSContract(t *testing.T, e *neotest.Executor, addrProc util.Uint160,
 	pubs keys.PublicKeys, config ...interface{}) util.Uint160 {
 	args := make([]interface{}, 5)
 	args[0] = false
@@ -33,12 +33,12 @@ func deployNeoFSContract(t *testing.T, e *neotest.Executor, addrProc util.Uint16
 	args[2] = arr
 	args[3] = append([]interface{}{}, config...)
 
-	c := neotest.CompileFile(t, e.CommitteeHash, neofsPath, path.Join(neofsPath, "config.yml"))
+	c := neotest.CompileFile(t, e.CommitteeHash, frostfsPath, path.Join(frostfsPath, "config.yml"))
 	e.DeployContract(t, c, args)
 	return c.Hash
 }
 
-func newNeoFSInvoker(t *testing.T, n int, config ...interface{}) (*neotest.ContractInvoker, neotest.Signer, keys.PublicKeys) {
+func newFrostFSInvoker(t *testing.T, n int, config ...interface{}) (*neotest.ContractInvoker, neotest.Signer, keys.PublicKeys) {
 	e := newExecutor(t)
 
 	accounts := make([]*wallet.Account, n)
@@ -66,7 +66,7 @@ func newNeoFSInvoker(t *testing.T, n int, config ...interface{}) (*neotest.Contr
 	}
 
 	alphabet := neotest.NewMultiSigner(accounts...)
-	h := deployNeoFSContract(t, e, util.Uint160{}, pubs, config...)
+	h := deployFrostFSContract(t, e, util.Uint160{}, pubs, config...)
 
 	gasHash, err := e.Chain.GetNativeContractScriptHash(nativenames.Gas)
 	require.NoError(t, err)
@@ -79,10 +79,10 @@ func newNeoFSInvoker(t *testing.T, n int, config ...interface{}) (*neotest.Contr
 	return e.CommitteeInvoker(h).WithSigners(alphabet), alphabet, pubs
 }
 
-func TestNeoFS_AlphabetList(t *testing.T) {
+func TestFrostFS_AlphabetList(t *testing.T) {
 	const alphabetSize = 4
 
-	e, _, pubs := newNeoFSInvoker(t, alphabetSize)
+	e, _, pubs := newFrostFSInvoker(t, alphabetSize)
 	arr := make([]stackitem.Item, len(pubs))
 	for i := range arr {
 		arr[i] = stackitem.NewStruct([]stackitem.Item{
@@ -93,8 +93,8 @@ func TestNeoFS_AlphabetList(t *testing.T) {
 	e.Invoke(t, stackitem.NewArray(arr), "alphabetList")
 }
 
-func TestNeoFS_InnerRingCandidate(t *testing.T) {
-	e, _, _ := newNeoFSInvoker(t, 4, neofs.CandidateFeeConfigKey, int64(10))
+func TestFrostFS_InnerRingCandidate(t *testing.T) {
+	e, _, _ := newFrostFSInvoker(t, 4, frostfs.CandidateFeeConfigKey, int64(10))
 
 	const candidateCount = 3
 
