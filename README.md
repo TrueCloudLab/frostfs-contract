@@ -1,15 +1,15 @@
 <p align="center">
-<img src="./.github/logo.svg" width="500px" alt="NeoFS">
+<img src="./.github/logo.svg" width="500px" alt="FrostFS">
 </p>
 <p align="center">
-  <a href="https://fs.neo.org">NeoFS</a> related smart contracts.
+  <a href="https://frostfs.info">FrostFS</a> related smart contracts.
 </p>
 
 ---
 
 # Overview
 
-NeoFS-Contract contains all NeoFS related contracts written for
+FrostFS-Contract contains all FrostFS related contracts written for
 [neo-go](https://github.com/nspcc-dev/neo-go) compiler. These contracts
 are deployed both in the mainchain and the sidechain.
 
@@ -77,9 +77,9 @@ $ make test
 ok      github.com/TrueCloudLab/frostfs-contract/tests       0.462s
 ```
 
-# NeoFS API compatibility
+# FrostFS API compatibility
 
-| neofs-contract version |                                                                                           supported NeoFS API versions                                                                                           |
+| neofs-contract version |                                                                                           supported FrostFS API versions                                                                                           |
 |:----------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
 |         v0.9.x         |                                    [v2.7.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.7.0), [v2.8.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.8.0)                                    |
 |        v0.10.x         |                                    [v2.7.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.7.0), [v2.8.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.8.0)                                    |

@@ -1,5 +1,5 @@
 # Changelog
-Changelog for NeoFS Contract
+Changelog for FrostFS Contract
 
 ## [Unreleased]
 
