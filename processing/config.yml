@@ -1,4 +1,4 @@
-name: "NeoFS Multi Signature Processing"
+name: "FrostFS Multi Signature Processing"
 safemethods: ["verify", "version"]
 permissions:
   - methods: ["update"]

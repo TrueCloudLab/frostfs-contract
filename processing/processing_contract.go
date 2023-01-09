@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	neofsContractKey = "neofsScriptHash"
+	frostfsContractKey = "frostfsScriptHash"
 
 	multiaddrMethod = "alphabetAddress"
 )
@@ -34,16 +34,16 @@ func _deploy(data interface{}, isUpdate bool) {
 	}
 
 	args := data.(struct {
-		addrNeoFS interop.Hash160
+		addrFrostFS interop.Hash160
 	})
 
 	ctx := storage.GetContext()
 
-	if len(args.addrNeoFS) != interop.Hash160Len {
+	if len(args.addrFrostFS) != interop.Hash160Len {
 		panic("incorrect length of contract script hash")
 	}
 
-	storage.Put(ctx, neofsContractKey, args.addrNeoFS)
+	storage.Put(ctx, frostfsContractKey, args.addrFrostFS)
 
 	runtime.Log("processing contract initialized")
 }
@@ -68,8 +68,8 @@ func Update(script []byte, manifest []byte, data interface{}) {
 // Alphabet nodes of the Inner Ring.
 func Verify() bool {
 	ctx := storage.GetContext()
-	neofsContractAddr := storage.Get(ctx, neofsContractKey).(interop.Hash160)
-	multiaddr := contract.Call(neofsContractAddr, multiaddrMethod, contract.ReadOnly).(interop.Hash160)
+	frostfsContractAddr := storage.Get(ctx, frostfsContractKey).(interop.Hash160)
+	multiaddr := contract.Call(frostfsContractAddr, multiaddrMethod, contract.ReadOnly).(interop.Hash160)
 
 	return runtime.CheckWitness(multiaddr)
 }
