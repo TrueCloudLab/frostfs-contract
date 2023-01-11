@@ -1,5 +1,5 @@
 /*
-Proxy contract is a contract deployed in NeoFS sidechain.
+Proxy contract is a contract deployed in FrostFS sidechain.
 
 Proxy contract pays for all multisignature transaction executions when notary
 service is enabled in the sidechain. Notary service prepares multisigned transactions,

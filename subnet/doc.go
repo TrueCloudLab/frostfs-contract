@@ -1,7 +1,7 @@
 /*
-Subnet contract is a contract deployed in NeoFS sidechain.
+Subnet contract is a contract deployed in FrostFS sidechain.
 
-Subnet contract stores and manages NeoFS subnetwork states. It allows registering
+Subnet contract stores and manages FrostFS subnetwork states. It allows registering
 and deleting subnetworks, limiting access to them, and defining a list of the Storage
 Nodes that can be included in them.
 

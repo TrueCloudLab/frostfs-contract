@@ -1,5 +1,5 @@
 /*
-Audit contract is a contract deployed in NeoFS sidechain.
+Audit contract is a contract deployed in FrostFS sidechain.
 
 Inner Ring nodes perform audit of the registered containers during every epoch.
 If a container contains StorageGroup objects, an Inner Ring node initializes

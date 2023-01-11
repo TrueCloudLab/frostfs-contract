@@ -15,7 +15,7 @@ are deployed both in the mainchain and the sidechain.
 
 Mainchain contracts:
 
-- neofs
+- frostfs
 - processing
 
 Sidechain contracts:
@@ -24,7 +24,7 @@ Sidechain contracts:
 - audit
 - balance
 - container
-- neofsid
+- frostfsid
 - netmap
 - nns
 - proxy
@@ -51,13 +51,13 @@ $ make all
 /home/user/go/bin/cli contract compile -i audit -c audit/config.yml -m audit/config.json -o audit/audit_contract.nef
 /home/user/go/bin/cli contract compile -i balance -c balance/config.yml -m balance/config.json -o balance/balance_contract.nef
 /home/user/go/bin/cli contract compile -i container -c container/config.yml -m container/config.json -o container/container_contract.nef
-/home/user/go/bin/cli contract compile -i neofsid -c neofsid/config.yml -m neofsid/config.json -o neofsid/neofsid_contract.nef
+/home/user/go/bin/cli contract compile -i frostfsid -c frostfsid/config.yml -m frostfsid/config.json -o frostfsid/frostfsid_contract.nef
 /home/user/go/bin/cli contract compile -i netmap -c netmap/config.yml -m netmap/config.json -o netmap/netmap_contract.nef
 /home/user/go/bin/cli contract compile -i proxy -c proxy/config.yml -m proxy/config.json -o proxy/proxy_contract.nef
 /home/user/go/bin/cli contract compile -i reputation -c reputation/config.yml -m reputation/config.json -o reputation/reputation_contract.nef
 /home/user/go/bin/cli contract compile -i subnet -c subnet/config.yml -m subnet/config.json -o subnet/subnet_contract.nef
 /home/user/go/bin/cli contract compile -i nns -c nns/config.yml -m nns/config.json -o nns/nns_contract.nef
-/home/user/go/bin/cli contract compile -i neofs -c neofs/config.yml -m neofs/config.json -o neofs/neofs_contract.nef
+/home/user/go/bin/cli contract compile -i frostfs -c frostfs/config.yml -m frostfs/config.json -o frostfs/frostfs_contract.nef
 /home/user/go/bin/cli contract compile -i processing -c processing/config.yml -m processing/config.json -o processing/processing_contract.nef
 ```
 
@@ -76,21 +76,6 @@ after applying changes, simply run `make test`.
 $ make test
 ok      github.com/TrueCloudLab/frostfs-contract/tests       0.462s
 ```
-
-# FrostFS API compatibility
-
-| neofs-contract version |                                                                                           supported FrostFS API versions                                                                                           |
-|:----------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-|         v0.9.x         |                                    [v2.7.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.7.0), [v2.8.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.8.0)                                    |
-|        v0.10.x         |                                    [v2.7.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.7.0), [v2.8.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.8.0)                                    |
-|        v0.11.x         | [v2.7.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.7.0), [v2.8.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.8.0), [v2.9.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.9.0) |
-|        v0.12.x         |                                                                      [v2.10.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.10.0)                                                                      |
-|        v0.13.x         |                                                                      [v2.11.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.11.0)                                                                      |
-|        v0.14.x         |                                                                      [v2.11.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.11.0)                                                                      |
-|        v0.15.x         |                                  [v2.11.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.11.0), [v2.12.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.12.0)                                  |
-|        v0.15.x         |                                  [v2.11.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.11.0), [v2.12.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.12.0)                                  |
-|        v0.16.x         |                                                                      [v2.14.0](https://github.com/nspcc-dev/neofs-api/releases/tag/v2.14.0)                                                                      |
-
 
 # License
 

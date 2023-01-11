@@ -1,4 +1,4 @@
-name: "NeoFS Audit"
+name: "FrostFS Audit"
 safemethods: ["get", "list", "listByEpoch", "listByCID", "listByNode", "version"]
 permissions:
   - methods: ["update"]

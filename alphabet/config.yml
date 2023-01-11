@@ -1,4 +1,4 @@
-name: "NeoFS Alphabet"
+name: "FrostFS Alphabet"
 safemethods: ["gas", "neo", "name", "version"]
 permissions:
   - methods: ["update", "transfer", "vote"]

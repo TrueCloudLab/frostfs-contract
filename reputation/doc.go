@@ -1,5 +1,5 @@
 /*
-Reputation contract is a contract deployed in NeoFS sidechain.
+Reputation contract is a contract deployed in FrostFS sidechain.
 
 Inner Ring nodes produce data audit for each container during each epoch. In the end,
 nodes produce DataAuditResult structure that contains information about audit
