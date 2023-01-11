@@ -1,7 +1,7 @@
 /*
-Balance contract is a contract deployed in NeoFS sidechain.
+Balance contract is a contract deployed in FrostFS sidechain.
 
-Balance contract stores all NeoFS account balances. It is a NEP-17 compatible
+Balance contract stores all FrostFS account balances. It is a NEP-17 compatible
 contract, so it can be tracked and controlled by N3 compatible network
 monitors and wallet software.
 
@@ -10,9 +10,9 @@ data audit settlements or container fee payments. It is inefficient to make such
 small payment transactions in the mainchain. To process small transfers, balance
 contract has higher (12) decimal precision than native GAS contract.
 
-NeoFS balances are synchronized with mainchain operations. Deposit produces
-minting of NEOFS tokens in Balance contract. Withdraw locks some NEOFS tokens
-in a special lock account. When NeoFS contract transfers GAS assets back to the
+FrostFS balances are synchronized with mainchain operations. Deposit produces
+minting of FROSTFS tokens in Balance contract. Withdraw locks some FROSTFS tokens
+in a special lock account. When FrostFS contract transfers GAS assets back to the
 user, the lock account is destroyed with burn operation.
 
 # Contract notifications
@@ -41,9 +41,9 @@ TransferX notification. This is an enhanced transfer notification with details.
 
 Lock notification. This notification is produced when a lock account is
 created. It contains information about the mainchain transaction that has produced
-the asset lock, the address of the lock account and the NeoFS epoch number until which the
+the asset lock, the address of the lock account and the FrostFS epoch number until which the
 lock account is valid. Alphabet nodes of the Inner Ring catch notification and initialize
-Cheque method invocation of NeoFS contract.
+Cheque method invocation of FrostFS contract.
 
 	Lock:
 	  - name: txID
@@ -67,7 +67,7 @@ replenished from deposit in the mainchain.
 	   type: Integer
 
 Burn notification. This notification is produced after user balance is reduced
-when NeoFS contract has transferred GAS assets back to the user.
+when FrostFS contract has transferred GAS assets back to the user.
 
 	Burn:
 	  - name: from

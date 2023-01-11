@@ -22,7 +22,7 @@ type (
 		CirculationKey string
 	}
 
-	// Account structure stores metadata of each NeoFS balance account.
+	// Account structure stores metadata of each FrostFS balance account.
 	Account struct {
 		// Active balance
 		Balance int
@@ -35,7 +35,7 @@ type (
 )
 
 const (
-	symbol      = "NEOFS"
+	symbol      = "FROSTFS"
 	decimals    = 12
 	circulation = "MainnetGAS"
 
@@ -101,32 +101,32 @@ func Update(script []byte, manifest []byte, data interface{}) {
 	runtime.Log("balance contract updated")
 }
 
-// Symbol is a NEP-17 standard method that returns NEOFS token symbol.
+// Symbol is a NEP-17 standard method that returns FROSTFS token symbol.
 func Symbol() string {
 	return token.Symbol
 }
 
-// Decimals is a NEP-17 standard method that returns precision of NeoFS
+// Decimals is a NEP-17 standard method that returns precision of FrostFS
 // balances.
 func Decimals() int {
 	return token.Decimals
 }
 
 // TotalSupply is a NEP-17 standard method that returns total amount of main
-// chain GAS in NeoFS network.
+// chain GAS in FrostFS network.
 func TotalSupply() int {
 	ctx := storage.GetReadOnlyContext()
 	return token.getSupply(ctx)
 }
 
-// BalanceOf is a NEP-17 standard method that returns NeoFS balance of the specified
+// BalanceOf is a NEP-17 standard method that returns FrostFS balance of the specified
 // account.
 func BalanceOf(account interop.Hash160) int {
 	ctx := storage.GetReadOnlyContext()
 	return token.balanceOf(ctx, account)
 }
 
-// Transfer is a NEP-17 standard method that transfers NeoFS balance from one
+// Transfer is a NEP-17 standard method that transfers FrostFS balance from one
 // account to another. It can be invoked only by the account owner.
 //
 // It produces Transfer and TransferX notifications. TransferX notification
@@ -136,7 +136,7 @@ func Transfer(from, to interop.Hash160, amount int, data interface{}) bool {
 	return token.transfer(ctx, from, to, amount, false, nil)
 }
 
-// TransferX is a method for NeoFS balance to be transferred from one account to
+// TransferX is a method for FrostFS balance to be transferred from one account to
 // another. It can be invoked by the account owner or by Alphabet nodes.
 //
 // It produces Transfer and TransferX notifications.
@@ -197,7 +197,7 @@ func TransferX(from, to interop.Hash160, amount int, details []byte) {
 // It produces Lock, Transfer and TransferX notifications.
 //
 // Lock method is invoked by Alphabet nodes of the Inner Ring when they process
-// Withdraw notification from NeoFS contract. This should transfer assets
+// Withdraw notification from FrostFS contract. This should transfer assets
 // to a new lock account that won't be used for anything beside Unlock and Burn.
 func Lock(txDetails []byte, from, to interop.Hash160, amount, until int) {
 	ctx := storage.GetContext()
@@ -300,9 +300,9 @@ func NewEpoch(epochNum int) {
 // It produces Mint, Transfer and TransferX notifications.
 //
 // Mint method is invoked by Alphabet nodes of the Inner Ring when they process
-// Deposit notification from NeoFS contract. Before that, Alphabet nodes should
+// Deposit notification from FrostFS contract. Before that, Alphabet nodes should
 // synchronize precision of mainchain GAS contract and Balance contract.
-// Mint increases total supply of NEP-17 compatible NeoFS token.
+// Mint increases total supply of NEP-17 compatible FrostFS token.
 func Mint(to interop.Hash160, amount int, txDetails []byte) {
 	ctx := storage.GetContext()
 	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
@@ -355,11 +355,11 @@ func Mint(to interop.Hash160, amount int, txDetails []byte) {
 // It produces Burn, Transfer and TransferX notifications.
 //
 // Burn method is invoked by Alphabet nodes of the Inner Ring when they process
-// Cheque notification from NeoFS contract. It means that locked assets have been
+// Cheque notification from FrostFS contract. It means that locked assets have been
 // transferred to the user in the mainchain, therefore the lock account should be destroyed.
 // Before that, Alphabet nodes should synchronize precision of mainchain GAS
 // contract and Balance contract. Burn decreases total supply of NEP-17
-// compatible NeoFS token.
+// compatible FrostFS token.
 func Burn(from interop.Hash160, amount int, txDetails []byte) {
 	ctx := storage.GetContext()
 	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
