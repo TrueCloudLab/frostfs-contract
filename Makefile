@@ -55,6 +55,6 @@ mr_proper: clean
 	done
 
 archive: build
-	@tar --transform "s|^./|neofs-contract-$(VERSION)/|" \
-		-czf neofs-contract-$(VERSION).tar.gz \
+	@tar --transform "s|^./|frostfs-contract-$(VERSION)/|" \
+		-czf frostfs-contract-$(VERSION).tar.gz \
 		$(shell find . -name '*.nef' -o -name 'config.json')
