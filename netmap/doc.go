@@ -1,7 +1,7 @@
 /*
-Netmap contract is a contract deployed in NeoFS sidechain.
+Netmap contract is a contract deployed in FrostFS sidechain.
 
-Netmap contract stores and manages NeoFS network map, Storage node candidates
+Netmap contract stores and manages FrostFS network map, Storage node candidates
 and epoch number counter. In notary disabled environment, contract also stores
 a list of Inner Ring node keys.
 

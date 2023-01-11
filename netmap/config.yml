@@ -1,4 +1,4 @@
-name: "NeoFS Netmap"
+name: "FrostFS Netmap"
 safemethods: ["innerRingList", "epoch", "netmap", "netmapCandidates", "snapshot", "snapshotByEpoch", "config", "listConfig", "version"]
 permissions:
   - methods: ["update", "newEpoch"]

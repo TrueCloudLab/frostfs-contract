@@ -32,10 +32,10 @@ const (
 	NodeStateMaintenance
 )
 
-// Node groups data related to NeoFS storage nodes registered in the NeoFS
+// Node groups data related to FrostFS storage nodes registered in the FrostFS
 // network. The information is stored in the current contract.
 type Node struct {
-	// Information about the node encoded according to the NeoFS binary
+	// Information about the node encoded according to the FrostFS binary
 	// protocol.
 	BLOB []byte
 
@@ -216,7 +216,7 @@ func AddPeerIR(nodeInfo []byte) {
 	})
 }
 
-// AddPeer accepts information about the network map candidate in the NeoFS
+// AddPeer accepts information about the network map candidate in the FrostFS
 // binary protocol format, identifies the caller and behaves depending on different
 // conditions listed below.
 //
@@ -623,14 +623,14 @@ func SnapshotByEpoch(epoch int) []Node {
 	return Snapshot(currentEpoch - epoch)
 }
 
-// Config returns configuration value of NeoFS configuration. If key does
+// Config returns configuration value of FrostFS configuration. If key does
 // not exists, returns nil.
 func Config(key []byte) interface{} {
 	ctx := storage.GetReadOnlyContext()
 	return getConfig(ctx, key)
 }
 
-// SetConfig key-value pair as a NeoFS runtime configuration value. It can be invoked
+// SetConfig key-value pair as a FrostFS runtime configuration value. It can be invoked
 // only by Alphabet nodes.
 func SetConfig(id, key, val []byte) {
 	ctx := storage.GetContext()
@@ -674,7 +674,7 @@ type record struct {
 }
 
 // ListConfig returns an array of structures that contain key and value of all
-// NeoFS configuration records. Key and value are both byte arrays.
+// FrostFS configuration records. Key and value are both byte arrays.
 func ListConfig() []record {
 	ctx := storage.GetReadOnlyContext()
 
