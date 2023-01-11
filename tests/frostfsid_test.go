@@ -16,20 +16,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const neofsidPath = "../neofsid"
+const frostfsidPath = "../frostfsid"
 
-func deployNeoFSIDContract(t *testing.T, e *neotest.Executor, addrNetmap, addrContainer util.Uint160) util.Uint160 {
+func deployFrostFSIDContract(t *testing.T, e *neotest.Executor, addrNetmap, addrContainer util.Uint160) util.Uint160 {
 	args := make([]interface{}, 5)
 	args[0] = false
 	args[1] = addrNetmap
 	args[2] = addrContainer
 
-	c := neotest.CompileFile(t, e.CommitteeHash, neofsidPath, path.Join(neofsidPath, "config.yml"))
+	c := neotest.CompileFile(t, e.CommitteeHash, frostfsidPath, path.Join(frostfsidPath, "config.yml"))
 	e.DeployContract(t, c, args)
 	return c.Hash
 }
 
-func newNeoFSIDInvoker(t *testing.T) *neotest.ContractInvoker {
+func newFrostFSIDInvoker(t *testing.T) *neotest.ContractInvoker {
 	e := newExecutor(t)
 
 	ctrNNS := neotest.CompileFile(t, e.CommitteeHash, nnsPath, path.Join(nnsPath, "config.yml"))
@@ -43,12 +43,12 @@ func newNeoFSIDInvoker(t *testing.T) *neotest.ContractInvoker {
 		container.AliasFeeKey, int64(containerAliasFee))
 	deployBalanceContract(t, e, ctrNetmap.Hash, ctrContainer.Hash)
 	deployContainerContract(t, e, ctrNetmap.Hash, ctrBalance.Hash, ctrNNS.Hash)
-	h := deployNeoFSIDContract(t, e, ctrNetmap.Hash, ctrContainer.Hash)
+	h := deployFrostFSIDContract(t, e, ctrNetmap.Hash, ctrContainer.Hash)
 	return e.CommitteeInvoker(h)
 }
 
-func TestNeoFSID_AddKey(t *testing.T) {
-	e := newNeoFSIDInvoker(t)
+func TestFrostFSID_AddKey(t *testing.T) {
+	e := newFrostFSIDInvoker(t)
 
 	pubs := make([][]byte, 6)
 	for i := range pubs {

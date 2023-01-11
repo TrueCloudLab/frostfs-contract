@@ -1,4 +1,4 @@
-package neofsid
+package frostfsid
 
 import (
 	"github.com/TrueCloudLab/frostfs-contract/common"
@@ -54,10 +54,10 @@ func _deploy(data interface{}, isUpdate bool) {
 	storage.Put(ctx, notaryDisabledKey, args.notaryDisabled)
 	if args.notaryDisabled {
 		common.InitVote(ctx)
-		runtime.Log("neofsid contract notary disabled")
+		runtime.Log("frostfsid contract notary disabled")
 	}
 
-	runtime.Log("neofsid contract initialized")
+	runtime.Log("frostfsid contract initialized")
 }
 
 // Update method updates contract source code and manifest. It can be invoked
@@ -69,7 +69,7 @@ func Update(script []byte, manifest []byte, data interface{}) {
 
 	contract.Call(interop.Hash160(management.Hash), "update",
 		contract.All, script, manifest, common.AppendVersion(data))
-	runtime.Log("neofsid contract updated")
+	runtime.Log("frostfsid contract updated")
 }
 
 // AddKey binds a list of the provided public keys to the OwnerID. It can be invoked only by

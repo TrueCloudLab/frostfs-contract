@@ -1,4 +1,4 @@
-name: "NeoFS ID"
+name: "FrostFS ID"
 safemethods: ["key", "version"]
 permissions:
   - methods: ["update"]
