@@ -1,5 +1,5 @@
 /*
-Container contract is a contract deployed in NeoFS sidechain.
+Container contract is a contract deployed in FrostFS sidechain.
 
 Container contract stores and manages containers, extended ACLs and container
 size estimations. Contract does not perform sanity or signature checks of

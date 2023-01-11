@@ -1,4 +1,4 @@
-name: "NeoFS Container"
+name: "FrostFS Container"
 safemethods: ["count", "get", "owner", "list", "eACL", "getContainerSize", "listContainerSizes", "version"]
 permissions:
   - methods: ["update", "addKey", "transferX",

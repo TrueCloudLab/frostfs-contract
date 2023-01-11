@@ -44,13 +44,13 @@ type (
 )
 
 const (
-	neofsIDContractKey = "identityScriptHash"
-	balanceContractKey = "balanceScriptHash"
-	netmapContractKey  = "netmapScriptHash"
-	nnsContractKey     = "nnsScriptHash"
-	nnsRootKey         = "nnsRoot"
-	nnsHasAliasKey     = "nnsHasAlias"
-	notaryDisabledKey  = "notary"
+	frostfsIDContractKey = "identityScriptHash"
+	balanceContractKey   = "balanceScriptHash"
+	netmapContractKey    = "netmapScriptHash"
+	nnsContractKey       = "nnsScriptHash"
+	nnsRootKey           = "nnsRoot"
+	nnsHasAliasKey       = "nnsHasAlias"
+	notaryDisabledKey    = "notary"
 
 	// RegistrationFeeKey is a key in netmap config which contains fee for container registration.
 	RegistrationFeeKey = "ContainerFee"
@@ -113,7 +113,7 @@ func _deploy(data interface{}, isUpdate bool) {
 
 	storage.Put(ctx, netmapContractKey, args.addrNetmap)
 	storage.Put(ctx, balanceContractKey, args.addrBalance)
-	storage.Put(ctx, neofsIDContractKey, args.addrID)
+	storage.Put(ctx, frostfsIDContractKey, args.addrID)
 	storage.Put(ctx, nnsContractKey, args.addrNNS)
 	storage.Put(ctx, nnsRootKey, args.nnsRoot)
 
@@ -179,7 +179,7 @@ func PutNamed(container []byte, signature interop.Signature,
 
 	ownerID := ownerFromBinaryContainer(container)
 	containerID := crypto.Sha256(container)
-	neofsIDContractAddr := storage.Get(ctx, neofsIDContractKey).(interop.Hash160)
+	frostfsIDContractAddr := storage.Get(ctx, frostfsIDContractKey).(interop.Hash160)
 	cnr := Container{
 		value: container,
 		sig:   signature,
@@ -272,7 +272,7 @@ func PutNamed(container []byte, signature interop.Signature,
 	}
 
 	if len(token) == 0 { // if container created directly without session
-		contract.Call(neofsIDContractAddr, "addKey", contract.All, ownerID, [][]byte{publicKey})
+		contract.Call(frostfsIDContractAddr, "addKey", contract.All, ownerID, [][]byte{publicKey})
 	}
 
 	runtime.Log("added new container")
