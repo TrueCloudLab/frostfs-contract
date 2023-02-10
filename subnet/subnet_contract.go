@@ -92,8 +92,7 @@ func Put(id []byte, ownerKey interop.PublicKey, info []byte) {
 
 	common.CheckOwnerWitness(ownerKey)
 
-	multiaddr := common.AlphabetAddress()
-	common.CheckAlphabetWitness(multiaddr)
+	common.CheckAlphabetWitness()
 
 	storage.Put(ctx, stKey, ownerKey)
 	stKey[0] = infoPrefix

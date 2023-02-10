@@ -109,7 +109,9 @@ func Update(script []byte, manifest []byte, data interface{}) {
 	alphabetKeys := roles.GetDesignatedByRole(roles.NeoFSAlphabet, uint32(blockHeight+1))
 	alphabetCommittee := common.Multiaddress(alphabetKeys, true)
 
-	common.CheckAlphabetWitness(alphabetCommittee)
+	if !runtime.CheckWitness(alphabetCommittee) {
+		panic(common.ErrAlphabetWitnessFailed)
+	}
 
 	contract.Call(interop.Hash160(management.Hash), "update",
 		contract.All, script, manifest, common.AppendVersion(data))
@@ -269,8 +271,7 @@ func Withdraw(user interop.Hash160, amount int) {
 //
 // This method produces Cheque notification to burn assets in sidechain.
 func Cheque(id []byte, user interop.Hash160, amount int, lockAcc []byte) {
-	multiaddr := AlphabetAddress()
-	common.CheckAlphabetWitness(multiaddr)
+	common.CheckAlphabetWitness()
 
 	from := runtime.GetExecutingScriptHash()
 
@@ -335,8 +336,7 @@ func Config(key []byte) interface{} {
 func SetConfig(id, key, val []byte) {
 	ctx := storage.GetContext()
 
-	multiaddr := AlphabetAddress()
-	common.CheckAlphabetWitness(multiaddr)
+	common.CheckAlphabetWitness()
 
 	setConfig(ctx, key, val)
 

@@ -90,8 +90,7 @@ func AddKey(owner []byte, keys []interop.PublicKey) {
 
 	ctx := storage.GetContext()
 
-	multiaddr := common.AlphabetAddress()
-	common.CheckAlphabetWitness(multiaddr)
+	common.CheckAlphabetWitness()
 
 	ownerKey := append([]byte{ownerKeysPrefix}, owner...)
 	for i := range keys {

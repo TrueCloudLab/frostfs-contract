@@ -144,7 +144,7 @@ func Update(script []byte, manifest []byte, data interface{}) {
 func AddPeerIR(nodeInfo []byte) {
 	ctx := storage.GetContext()
 
-	common.CheckAlphabetWitness(common.AlphabetAddress())
+	common.CheckAlphabetWitness()
 
 	publicKey := nodeInfo[2:35] // V2 format: offset:2, len:33
 
@@ -217,7 +217,7 @@ func UpdateState(state NodeState, publicKey interop.PublicKey) {
 	ctx := storage.GetContext()
 
 	common.CheckWitness(publicKey)
-	common.CheckAlphabetWitness(common.AlphabetAddress())
+	common.CheckAlphabetWitness()
 
 	updateCandidateState(ctx, publicKey, state)
 }
@@ -231,7 +231,7 @@ func UpdateState(state NodeState, publicKey interop.PublicKey) {
 func UpdateStateIR(state NodeState, publicKey interop.PublicKey) {
 	ctx := storage.GetContext()
 
-	common.CheckAlphabetWitness(common.AlphabetAddress())
+	common.CheckAlphabetWitness()
 
 	updateCandidateState(ctx, publicKey, state)
 }
@@ -248,8 +248,7 @@ func UpdateStateIR(state NodeState, publicKey interop.PublicKey) {
 func NewEpoch(epochNum int) {
 	ctx := storage.GetContext()
 
-	multiaddr := common.AlphabetAddress()
-	common.CheckAlphabetWitness(multiaddr)
+	common.CheckAlphabetWitness()
 
 	currentEpoch := storage.Get(ctx, snapshotEpoch).(int)
 	if epochNum <= currentEpoch {
@@ -347,7 +346,7 @@ func getSnapshotCount(ctx storage.Context) int {
 //
 // Count MUST NOT be negative.
 func UpdateSnapshotCount(count int) {
-	common.CheckAlphabetWitness(common.AlphabetAddress())
+	common.CheckAlphabetWitness()
 	if count < 0 {
 		panic("count must be positive")
 	}
@@ -447,8 +446,7 @@ func Config(key []byte) interface{} {
 func SetConfig(id, key, val []byte) {
 	ctx := storage.GetContext()
 
-	multiaddr := common.AlphabetAddress()
-	common.CheckAlphabetWitness(multiaddr)
+	common.CheckAlphabetWitness()
 
 	setConfig(ctx, key, val)
 

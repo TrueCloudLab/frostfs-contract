@@ -182,8 +182,7 @@ func Vote(epoch int, candidates []interop.PublicKey) {
 	index := index(ctx)
 	name := name(ctx)
 
-	multiaddr := common.AlphabetAddress()
-	common.CheckAlphabetWitness(multiaddr)
+	common.CheckAlphabetWitness()
 
 	curEpoch := currentEpoch(ctx)
 	if epoch != curEpoch {
