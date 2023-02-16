@@ -18,23 +18,16 @@ const (
 )
 
 func _deploy(data interface{}, isUpdate bool) {
-	ctx := storage.GetContext()
+	//TODO(@acid-ant): #9 remove notaryDisabled from args in future version
+	args := data.([]interface{})
+	if args[0].(bool) {
+		panic(common.PanicMsgForNotaryDisabledEnv)
+	}
+	storage.Delete(storage.GetContext(), notaryDisabledKey)
 
 	if isUpdate {
-		args := data.([]interface{})
 		common.CheckVersion(args[len(args)-1].(int))
 		return
-	}
-
-	args := data.(struct {
-		notaryDisabled bool
-	})
-
-	// initialize the way to collect signatures
-	storage.Put(ctx, notaryDisabledKey, args.notaryDisabled)
-	if args.notaryDisabled {
-		common.InitVote(ctx)
-		runtime.Log("reputation contract notary disabled")
 	}
 
 	runtime.Log("reputation contract initialized")
@@ -60,40 +53,14 @@ func Update(script []byte, manifest []byte, data interface{}) {
 // Value contains a stable marshaled structure of DataAuditResult.
 func Put(epoch int, peerID []byte, value []byte) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	var ( // for invocation collection without notary
-		alphabet     []interop.PublicKey
-		nodeKey      []byte
-		alphabetCall bool
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-		alphabetCall = len(nodeKey) != 0
-	} else {
-		multiaddr := common.AlphabetAddress()
-		alphabetCall = runtime.CheckWitness(multiaddr)
-	}
-
-	if !alphabetCall {
+	multiaddr := common.AlphabetAddress()
+	if !runtime.CheckWitness(multiaddr) {
 		runtime.Notify("reputationPut", epoch, peerID, value)
 		return
 	}
 
 	id := storageID(epoch, peerID)
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
-
 	key := getReputationKey(reputationCountPrefix, id)
 	rawCnt := storage.Get(ctx, key)
 	cnt := 0

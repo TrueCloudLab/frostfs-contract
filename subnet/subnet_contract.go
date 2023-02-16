@@ -27,14 +27,6 @@ const (
 	ErrInvalidUser = "invalid user"
 	// ErrInvalidNode is thrown when node has invalid format.
 	ErrInvalidNode = "invalid node key"
-	// ErrNodeAdmNotExist is thrown when node admin is not found.
-	ErrNodeAdmNotExist = "node admin not found"
-	// ErrClientAdmNotExist is thrown when client admin is not found.
-	ErrClientAdmNotExist = "client admin not found"
-	// ErrNodeNotExist is thrown when node is not found.
-	ErrNodeNotExist = "node not found"
-	// ErrUserNotExist is thrown when user is not found.
-	ErrUserNotExist = "user not found"
 	// ErrAccessDenied is thrown when operation is denied for caller.
 	ErrAccessDenied = "access denied"
 )
@@ -57,18 +49,17 @@ const (
 
 // _deploy function sets up initial list of inner ring public keys.
 func _deploy(data interface{}, isUpdate bool) {
+	//TODO(@acid-ant): #9 remove notaryDisabled from args in future version
+	args := data.([]interface{})
+	if args[0].(bool) {
+		panic(common.PanicMsgForNotaryDisabledEnv)
+	}
+	storage.Delete(storage.GetContext(), notaryDisabledKey)
+
 	if isUpdate {
-		args := data.([]interface{})
 		common.CheckVersion(args[len(args)-1].(int))
 		return
 	}
-
-	args := data.(struct {
-		notaryDisabled bool
-	})
-
-	ctx := storage.GetContext()
-	storage.Put(ctx, []byte{notaryDisabledKey}, args.notaryDisabled)
 }
 
 // Update method updates contract source code and manifest. It can be invoked
@@ -99,30 +90,10 @@ func Put(id []byte, ownerKey interop.PublicKey, info []byte) {
 		panic(ErrAlreadyExists)
 	}
 
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
-	if notaryDisabled {
-		alphabet := common.AlphabetNodes()
-		nodeKey := common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			common.CheckWitness(ownerKey)
-			runtime.Notify("Put", id, ownerKey, info)
-			return
-		}
+	common.CheckOwnerWitness(ownerKey)
 
-		threshold := len(alphabet)*2/3 + 1
-		id := common.InvokeID([]interface{}{ownerKey, info}, []byte("put"))
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	} else {
-		common.CheckOwnerWitness(ownerKey)
-
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
+	multiaddr := common.AlphabetAddress()
+	common.CheckAlphabetWitness(multiaddr)
 
 	storage.Put(ctx, stKey, ownerKey)
 	stKey[0] = infoPrefix

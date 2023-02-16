@@ -5,6 +5,9 @@ Changelog for FrostFS Contract
 
 ### Added
 ### Changed
+### Removed
+- Notary disabled code from all contracts (#7)
+
 ### Updated
 - `neo-go` to `v0.99.4`
 

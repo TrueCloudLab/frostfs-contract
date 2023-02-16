@@ -6,26 +6,10 @@ import (
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/ledger"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/neo"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/roles"
-	"github.com/nspcc-dev/neo-go/pkg/interop/runtime"
 )
 
 type IRNode struct {
 	PublicKey interop.PublicKey
-}
-
-const irListMethod = "innerRingList"
-
-// InnerRingInvoker returns the public key of the inner ring node that has invoked the contract.
-// Work around for environments without notary support.
-func InnerRingInvoker(ir []interop.PublicKey) interop.PublicKey {
-	for i := 0; i < len(ir); i++ {
-		node := ir[i]
-		if runtime.CheckWitness(node) {
-			return node
-		}
-	}
-
-	return nil
 }
 
 // InnerRingNodes return a list of inner ring nodes from state validator role
@@ -33,18 +17,6 @@ func InnerRingInvoker(ir []interop.PublicKey) interop.PublicKey {
 func InnerRingNodes() []interop.PublicKey {
 	blockHeight := ledger.CurrentIndex()
 	return roles.GetDesignatedByRole(roles.NeoFSAlphabet, uint32(blockHeight+1))
-}
-
-// InnerRingNodesFromNetmap gets a list of inner ring nodes through
-// calling "innerRingList" method of smart contract.
-// Work around for environments without notary support.
-func InnerRingNodesFromNetmap(sc interop.Hash160) []interop.PublicKey {
-	nodes := contract.Call(sc, irListMethod, contract.ReadOnly).([]IRNode)
-	pubs := []interop.PublicKey{}
-	for i := range nodes {
-		pubs = append(pubs, nodes[i].PublicKey)
-	}
-	return pubs
 }
 
 // AlphabetNodes returns a list of alphabet nodes from committee in the sidechain.

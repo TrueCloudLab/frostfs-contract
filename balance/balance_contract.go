@@ -60,6 +60,13 @@ func init() {
 
 func _deploy(data interface{}, isUpdate bool) {
 	ctx := storage.GetContext()
+
+	//TODO(@acid-ant): #9 remove notaryDisabled from args in future version
+	if data.([]interface{})[0].(bool) {
+		panic(common.PanicMsgForNotaryDisabledEnv)
+	}
+	storage.Delete(ctx, notaryDisabledKey)
+
 	if isUpdate {
 		args := data.([]interface{})
 		common.CheckVersion(args[len(args)-1].(int))
@@ -67,6 +74,7 @@ func _deploy(data interface{}, isUpdate bool) {
 	}
 
 	args := data.(struct {
+		//TODO(@acid-ant): #9 remove notaryDisabled in future version
 		notaryDisabled bool
 		addrNetmap     interop.Hash160
 		addrContainer  interop.Hash160
@@ -78,13 +86,6 @@ func _deploy(data interface{}, isUpdate bool) {
 
 	storage.Put(ctx, netmapContractKey, args.addrNetmap)
 	storage.Put(ctx, containerContractKey, args.addrContainer)
-
-	// initialize the way to collect signatures
-	storage.Put(ctx, notaryDisabledKey, args.notaryDisabled)
-	if args.notaryDisabled {
-		common.InitVote(ctx)
-		runtime.Log("balance contract notary disabled")
-	}
 
 	runtime.Log("balance contract initialized")
 }
@@ -146,42 +147,9 @@ func Transfer(from, to interop.Hash160, amount int, data interface{}) bool {
 // Inner Ring with multisignature.
 func TransferX(from, to interop.Hash160, amount int, details []byte) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	var ( // for invocation collection without notary
-		alphabet     []interop.PublicKey
-		nodeKey      []byte
-		indirectCall bool
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("this method must be invoked from inner ring")
-		}
-
-		indirectCall = common.FromKnownContract(
-			ctx,
-			runtime.GetCallingScriptHash(),
-			containerContractKey,
-		)
-	} else {
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
-
-	if notaryDisabled && !indirectCall {
-		threshold := len(alphabet)*2/3 + 1
-		id := common.InvokeID([]interface{}{from, to, amount}, []byte("transfer"))
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
+	multiaddr := common.AlphabetAddress()
+	common.CheckAlphabetWitness(multiaddr)
 
 	result := token.transfer(ctx, from, to, amount, true, details)
 	if !result {
@@ -201,23 +169,9 @@ func TransferX(from, to interop.Hash160, amount int, details []byte) {
 // to a new lock account that won't be used for anything beside Unlock and Burn.
 func Lock(txDetails []byte, from, to interop.Hash160, amount, until int) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("this method must be invoked from inner ring")
-		}
-	} else {
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
+	multiaddr := common.AlphabetAddress()
+	common.CheckAlphabetWitness(multiaddr)
 
 	details := common.LockTransferDetails(txDetails)
 
@@ -225,18 +179,6 @@ func Lock(txDetails []byte, from, to interop.Hash160, amount, until int) {
 		Balance: 0,
 		Until:   until,
 		Parent:  from,
-	}
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-		id := common.InvokeID([]interface{}{txDetails}, []byte("lock"))
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
 	}
 
 	common.SetSerialized(ctx, to, lockAccount)
@@ -258,21 +200,9 @@ func Lock(txDetails []byte, from, to interop.Hash160, amount, until int) {
 // It produces Transfer and TransferX notifications.
 func NewEpoch(epochNum int) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	if notaryDisabled {
-		indirectCall := common.FromKnownContract(
-			ctx,
-			runtime.GetCallingScriptHash(),
-			netmapContractKey,
-		)
-		if !indirectCall {
-			panic("this method must be invoked from inner ring")
-		}
-	} else {
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
+	multiaddr := common.AlphabetAddress()
+	common.CheckAlphabetWitness(multiaddr)
 
 	it := storage.Find(ctx, []byte{}, storage.KeysOnly)
 	for iterator.Next(it) {
@@ -305,37 +235,11 @@ func NewEpoch(epochNum int) {
 // Mint increases total supply of NEP-17 compatible FrostFS token.
 func Mint(to interop.Hash160, amount int, txDetails []byte) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("this method must be invoked from inner ring")
-		}
-	} else {
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
+	multiaddr := common.AlphabetAddress()
+	common.CheckAlphabetWitness(multiaddr)
 
 	details := common.MintTransferDetails(txDetails)
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-		id := common.InvokeID([]interface{}{txDetails}, []byte("mint"))
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
 
 	ok := token.transfer(ctx, nil, to, amount, true, details)
 	if !ok {
@@ -362,37 +266,11 @@ func Mint(to interop.Hash160, amount int, txDetails []byte) {
 // compatible FrostFS token.
 func Burn(from interop.Hash160, amount int, txDetails []byte) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("this method must be invoked from inner ring")
-		}
-	} else {
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
+	multiaddr := common.AlphabetAddress()
+	common.CheckAlphabetWitness(multiaddr)
 
 	details := common.BurnTransferDetails(txDetails)
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-		id := common.InvokeID([]interface{}{txDetails}, []byte("burn"))
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
 
 	ok := token.transfer(ctx, from, nil, amount, true, details)
 	if !ok {

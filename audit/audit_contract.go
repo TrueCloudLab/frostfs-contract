@@ -44,6 +44,13 @@ const (
 
 func _deploy(data interface{}, isUpdate bool) {
 	ctx := storage.GetContext()
+
+	//TODO(@acid-ant): #9 remove notaryDisabled from args in future version
+	if data.([]interface{})[0].(bool) {
+		panic(common.PanicMsgForNotaryDisabledEnv)
+	}
+	storage.Delete(ctx, notaryDisabledKey)
+
 	if isUpdate {
 		args := data.([]interface{})
 		common.CheckVersion(args[len(args)-1].(int))
@@ -51,6 +58,7 @@ func _deploy(data interface{}, isUpdate bool) {
 	}
 
 	args := data.(struct {
+		//TODO(@acid-ant): #9 remove notaryDisabled in future version
 		notaryDisabled bool
 		addrNetmap     interop.Hash160
 	})
@@ -60,12 +68,6 @@ func _deploy(data interface{}, isUpdate bool) {
 	}
 
 	storage.Put(ctx, netmapContractKey, args.addrNetmap)
-
-	// initialize the way to collect signatures
-	storage.Put(ctx, notaryDisabledKey, args.notaryDisabled)
-	if args.notaryDisabled {
-		runtime.Log("audit contract notary disabled")
-	}
 
 	runtime.Log("audit contract initialized")
 }
@@ -90,16 +92,8 @@ func Update(script []byte, manifest []byte, data interface{}) {
 // in later epochs.
 func Put(rawAuditResult []byte) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	var innerRing []interop.PublicKey
-
-	if notaryDisabled {
-		netmapContract := storage.Get(ctx, netmapContractKey).(interop.Hash160)
-		innerRing = common.InnerRingNodesFromNetmap(netmapContract)
-	} else {
-		innerRing = common.InnerRingNodes()
-	}
+	innerRing := common.InnerRingNodes()
 
 	hdr := newAuditHeader(rawAuditResult)
 	presented := false
@@ -182,7 +176,6 @@ func list(it iterator.Iterator) [][]byte {
 
 	ignore := [][]byte{
 		[]byte(netmapContractKey),
-		[]byte(notaryDisabledKey),
 	}
 
 loop:
