@@ -70,16 +70,6 @@ public keys with the user account (OwnerID). Keys argument is an array of ByteAr
 	  - name: keys
 	    type: Array
 
-AlphabetUpdate notification. This notification is produced when Alphabet nodes
-have updated their lists in the contract. Alphabet argument is an array of ByteArray. It
-contains public keys of new alphabet nodes.
-
-	AlphabetUpdate:
-	  - name: id
-	    type: ByteArray
-	  - name: alphabet
-	    type: Array
-
 SetConfig notification. This notification is produced when Alphabet nodes update
 FrostFS network configuration value.
 

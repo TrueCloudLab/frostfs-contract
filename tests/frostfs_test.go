@@ -79,20 +79,6 @@ func newFrostFSInvoker(t *testing.T, n int, config ...interface{}) (*neotest.Con
 	return e.CommitteeInvoker(h).WithSigners(alphabet), alphabet, pubs
 }
 
-func TestFrostFS_AlphabetList(t *testing.T) {
-	const alphabetSize = 4
-
-	e, _, pubs := newFrostFSInvoker(t, alphabetSize)
-	arr := make([]stackitem.Item, len(pubs))
-	for i := range arr {
-		arr[i] = stackitem.NewStruct([]stackitem.Item{
-			stackitem.NewByteArray(pubs[i].Bytes()),
-		})
-	}
-
-	e.Invoke(t, stackitem.NewArray(arr), "alphabetList")
-}
-
 func TestFrostFS_InnerRingCandidate(t *testing.T) {
 	e, _, _ := newFrostFSInvoker(t, 4, frostfs.CandidateFeeConfigKey, int64(10))
 

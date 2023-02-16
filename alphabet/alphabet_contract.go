@@ -4,7 +4,6 @@ import (
 	"github.com/TrueCloudLab/frostfs-contract/common"
 	"github.com/nspcc-dev/neo-go/pkg/interop"
 	"github.com/nspcc-dev/neo-go/pkg/interop/contract"
-	"github.com/nspcc-dev/neo-go/pkg/interop/native/crypto"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/gas"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/management"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/neo"
@@ -34,13 +33,17 @@ func OnNEP17Payment(from interop.Hash160, amount int, data interface{}) {
 
 func _deploy(data interface{}, isUpdate bool) {
 	ctx := storage.GetContext()
+
 	if isUpdate {
 		args := data.([]interface{})
 		common.CheckVersion(args[len(args)-1].(int))
+		//TODO(@acid-ant): #9 remove notaryDisabled from args in future version
+		storage.Delete(ctx, notaryDisabledKey)
 		return
 	}
 
 	args := data.(struct {
+		//TODO(@acid-ant): #9 remove notaryDisabled in future version
 		notaryDisabled bool
 		addrNetmap     interop.Hash160
 		addrProxy      interop.Hash160
@@ -49,7 +52,11 @@ func _deploy(data interface{}, isUpdate bool) {
 		total          int
 	})
 
-	if len(args.addrNetmap) != interop.Hash160Len || !args.notaryDisabled && len(args.addrProxy) != interop.Hash160Len {
+	if args.notaryDisabled {
+		panic(common.PanicMsgForNotaryDisabledEnv)
+	}
+
+	if len(args.addrNetmap) != interop.Hash160Len || len(args.addrProxy) != interop.Hash160Len {
 		panic("incorrect length of contract script hash")
 	}
 
@@ -58,13 +65,6 @@ func _deploy(data interface{}, isUpdate bool) {
 	storage.Put(ctx, nameKey, args.name)
 	storage.Put(ctx, indexKey, args.index)
 	storage.Put(ctx, totalKey, args.total)
-
-	// initialize the way to collect signatures
-	storage.Put(ctx, notaryDisabledKey, args.notaryDisabled)
-	if args.notaryDisabled {
-		common.InitVote(ctx)
-		runtime.Log(args.name + " notary disabled")
-	}
 
 	runtime.Log(args.name + " contract initialized")
 }
@@ -120,15 +120,11 @@ func checkPermission(ir []interop.PublicKey) bool {
 // and proxy contract. It can be invoked only by an Alphabet node of the Inner Ring.
 //
 // To produce GAS, an alphabet contract transfers all available NEO from the contract
-// account to itself. If notary is enabled, 50% of the GAS in the contract account
+// account to itself. 50% of the GAS in the contract account
 // are transferred to proxy contract. 43.75% of the GAS are equally distributed
 // among all Inner Ring nodes. Remaining 6.25% of the GAS stay in the contract.
-//
-// If notary is disabled, 87.5% of the GAS are equally distributed among all
-// Inner Ring nodes. Remaining 12.5% of the GAS stay in the contract.
 func Emit() {
 	ctx := storage.GetReadOnlyContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
 	alphabet := common.AlphabetNodes()
 	if !checkPermission(alphabet) {
@@ -143,31 +139,22 @@ func Emit() {
 
 	gasBalance := gas.BalanceOf(contractHash)
 
-	if !notaryDisabled {
-		proxyAddr := storage.Get(ctx, proxyKey).(interop.Hash160)
+	proxyAddr := storage.Get(ctx, proxyKey).(interop.Hash160)
 
-		proxyGas := gasBalance / 2
-		if proxyGas == 0 {
-			panic("no gas to emit")
-		}
-
-		if !gas.Transfer(contractHash, proxyAddr, proxyGas, nil) {
-			runtime.Log("could not transfer GAS to proxy contract")
-		}
-
-		gasBalance -= proxyGas
-
-		runtime.Log("utility token has been emitted to proxy contract")
+	proxyGas := gasBalance / 2
+	if proxyGas == 0 {
+		panic("no gas to emit")
 	}
 
-	var innerRing []interop.PublicKey
-
-	if notaryDisabled {
-		netmapContract := storage.Get(ctx, netmapKey).(interop.Hash160)
-		innerRing = common.InnerRingNodesFromNetmap(netmapContract)
-	} else {
-		innerRing = common.InnerRingNodes()
+	if !gas.Transfer(contractHash, proxyAddr, proxyGas, nil) {
+		runtime.Log("could not transfer GAS to proxy contract")
 	}
+
+	gasBalance -= proxyGas
+
+	runtime.Log("utility token has been emitted to proxy contract")
+
+	innerRing := common.InnerRingNodes()
 
 	gasPerNode := gasBalance * 7 / 8 / len(innerRing)
 
@@ -192,25 +179,10 @@ func Emit() {
 // alphabet contracts) should vote for a new committee.
 func Vote(epoch int, candidates []interop.PublicKey) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 	index := index(ctx)
 	name := name(ctx)
 
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("invalid invoker")
-		}
-	} else {
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
+	common.CheckAlphabetWitness()
 
 	curEpoch := currentEpoch(ctx)
 	if epoch != curEpoch {
@@ -220,39 +192,12 @@ func Vote(epoch int, candidates []interop.PublicKey) {
 	candidate := candidates[index%len(candidates)]
 	address := runtime.GetExecutingScriptHash()
 
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-		id := voteID(epoch, candidates)
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
-
 	ok := neo.Vote(address, candidate)
 	if ok {
 		runtime.Log(name + ": successfully voted for validator")
 	} else {
 		runtime.Log(name + ": vote has been failed")
 	}
-}
-
-func voteID(epoch interface{}, args []interop.PublicKey) []byte {
-	var (
-		result     []byte
-		epochBytes = epoch.([]byte)
-	)
-
-	result = append(result, epochBytes...)
-
-	for i := range args {
-		result = append(result, args[i]...)
-	}
-
-	return crypto.Sha256(result)
 }
 
 // Name returns the Glagolitic name of the contract.

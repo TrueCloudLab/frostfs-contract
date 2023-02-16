@@ -5,7 +5,6 @@ import (
 	"github.com/nspcc-dev/neo-go/pkg/interop"
 	"github.com/nspcc-dev/neo-go/pkg/interop/contract"
 	"github.com/nspcc-dev/neo-go/pkg/interop/iterator"
-	"github.com/nspcc-dev/neo-go/pkg/interop/native/crypto"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/ledger"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/management"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/std"
@@ -71,7 +70,14 @@ var (
 func _deploy(data interface{}, isUpdate bool) {
 	ctx := storage.GetContext()
 
+	//TODO(@acid-ant): #9 remove notaryDisabled from args in future version
+	if data.([]interface{})[0].(bool) {
+		panic(common.PanicMsgForNotaryDisabledEnv)
+	}
+	storage.Delete(ctx, notaryDisabledKey)
+
 	var args = data.(struct {
+		//TODO(@acid-ant): #9 remove notaryDisabled in future version
 		notaryDisabled bool
 		addrBalance    interop.Hash160
 		addrContainer  interop.Hash160
@@ -115,14 +121,6 @@ func _deploy(data interface{}, isUpdate bool) {
 	storage.Put(ctx, balanceContractKey, args.addrBalance)
 	storage.Put(ctx, containerContractKey, args.addrContainer)
 
-	// initialize the way to collect signatures
-	storage.Put(ctx, notaryDisabledKey, args.notaryDisabled)
-	if args.notaryDisabled {
-		common.SetSerialized(ctx, innerRingKey, args.keys)
-		common.InitVote(ctx)
-		runtime.Log("netmap contract notary disabled")
-	}
-
 	runtime.Log("netmap contract initialized")
 }
 
@@ -138,62 +136,6 @@ func Update(script []byte, manifest []byte, data interface{}) {
 	runtime.Log("netmap contract updated")
 }
 
-// InnerRingList method returns a slice of structures that contains the public key of
-// an Inner Ring node. It should be used in notary disabled environment only.
-//
-// If notary is enabled, look to NeoFSAlphabet role in native RoleManagement
-// contract of the sidechain.
-func InnerRingList() []common.IRNode {
-	ctx := storage.GetReadOnlyContext()
-	pubs := getIRNodes(ctx)
-	nodes := []common.IRNode{}
-	for i := range pubs {
-		nodes = append(nodes, common.IRNode{PublicKey: pubs[i]})
-	}
-	return nodes
-}
-
-// UpdateInnerRing method updates a list of Inner Ring node keys. It should be used
-// only in notary disabled environment. It can be invoked only by Alphabet nodes.
-//
-// If notary is enabled, update NeoFSAlphabet role in native RoleManagement
-// contract of the sidechain. Use notary service to collect multisignature.
-func UpdateInnerRing(keys []interop.PublicKey) {
-	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
-
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("this method must be invoked by alphabet nodes")
-		}
-	} else {
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-		id := keysID(keys, []byte("updateIR"))
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
-
-	runtime.Log("inner ring list updated")
-	common.SetSerialized(ctx, innerRingKey, keys)
-}
-
 // AddPeerIR accepts Alphabet calls in the notary-enabled contract setting and
 // behaves similar to AddPeer in the notary-disabled one.
 //
@@ -201,12 +143,8 @@ func UpdateInnerRing(keys []interop.PublicKey) {
 // AddPeerIR MUST be called by the Alphabet member only.
 func AddPeerIR(nodeInfo []byte) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
-	if notaryDisabled {
-		panic("AddPeerIR should only be called in notary-enabled environment")
-	}
 
-	common.CheckAlphabetWitness(common.AlphabetAddress())
+	common.CheckAlphabetWitness()
 
 	publicKey := nodeInfo[2:35] // V2 format: offset:2, len:33
 
@@ -217,77 +155,13 @@ func AddPeerIR(nodeInfo []byte) {
 }
 
 // AddPeer accepts information about the network map candidate in the FrostFS
-// binary protocol format, identifies the caller and behaves depending on different
-// conditions listed below.
-//
-// Contract settings:
-//
-//	(1) notary-enabled
-//	(2) notary-disabled
-//
-// Callers:
-//
-//	(a) candidate himself, if node's public key corresponds to the signer
-//	(b) Alphabet member
-//	(c) others
-//
-// AddPeer case-by-case behavior:
-//
-//	(1a) does nothing
-//	(1b) panics. Notice that AddPeerIR MUST be used for this purpose.
-//	(2a) throws AddPeer notification with the provided BLOB
-//	(2b) accepts Alphabet vote. If the threshold of votes is reached, adds
-//	new element to the candidate set, and throws AddPeerSuccess notification.
-//	(c) panics
-//
-// Candidate MUST call AddPeer with "online" state in its descriptor. Alphabet
-// members MUST NOT call AddPeer with any other states.
+// binary protocol format and does nothing. Keep method because storage node
+// creates a notary transaction with this method, which produces a notary
+// notification (implicit here).
 func AddPeer(nodeInfo []byte) {
-	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
-
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-	}
-
-	// V2 format
-	publicKey := nodeInfo[2:35] // offset:2, len:33
-
-	// If notary is enabled or caller is not an alphabet node,
-	// just emit the notification for alphabet.
-	if !notaryDisabled || len(nodeKey) == 0 {
-		common.CheckWitness(publicKey)
-		if notaryDisabled {
-			runtime.Notify("AddPeer", nodeInfo)
-		}
-		return
-	}
-
-	candidate := Node{
-		BLOB:  nodeInfo,
-		State: NodeStateOnline,
-	}
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-		rawCandidate := std.Serialize(candidate)
-		id := crypto.Sha256(rawCandidate)
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
-
-	addToNetmap(ctx, publicKey, candidate)
+	// V2 format - offset:2, len:33
+	common.CheckWitness(nodeInfo[2:35])
+	return
 }
 
 // updates state of the network map candidate by its public key in the contract
@@ -310,13 +184,8 @@ func updateCandidateState(ctx storage.Context, publicKey interop.PublicKey, stat
 }
 
 // UpdateState accepts new state to be assigned to network map candidate
-// identified by the given public key, identifies the signer and behaves
-// depending on different conditions listed below.
-//
-// Contract settings:
-//
-//	(1) notary-enabled
-//	(2) notary-disabled
+// identified by the given public key, identifies the signer.
+// Applicable only for notary-enabled environment.
 //
 // Signers:
 //
@@ -327,13 +196,10 @@ func updateCandidateState(ctx storage.Context, publicKey interop.PublicKey, stat
 //
 // UpdateState case-by-case behavior:
 //
-//	(1a) panics
-//	(1b) like (1a)
-//	(1ab) updates candidate's state in the contract storage (*), and throws
+//	(a) panics
+//	(b) panics
+//	(ab) updates candidate's state in the contract storage (*), and throws
 //	UpdateStateSuccess with the provided key and new state
-//	(2a) throws UpdateState notification with the provided key and new state
-//	(2b) accepts Alphabet vote. If the threshold of votes is reached, behaves
-//	like (1ab).
 //	(c) panics
 //
 // (*) Candidate is removed from the candidate set if state is NodeStateOffline.
@@ -349,33 +215,9 @@ func UpdateState(state NodeState, publicKey interop.PublicKey) {
 	}
 
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	if notaryDisabled {
-		alphabet := common.AlphabetNodes()
-		nodeKey := common.InnerRingInvoker(alphabet)
-
-		// If caller is not an alphabet node,
-		// just emit the notification for alphabet.
-		if len(nodeKey) == 0 {
-			common.CheckWitness(publicKey)
-			runtime.Notify("UpdateState", state, publicKey)
-			return
-		}
-
-		threshold := len(alphabet)*2/3 + 1
-		id := common.InvokeID([]interface{}{state, publicKey}, []byte("update"))
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	} else {
-		common.CheckWitness(publicKey)
-		common.CheckAlphabetWitness(common.AlphabetAddress())
-	}
+	common.CheckWitness(publicKey)
+	common.CheckAlphabetWitness()
 
 	updateCandidateState(ctx, publicKey, state)
 }
@@ -388,12 +230,8 @@ func UpdateState(state NodeState, publicKey interop.PublicKey) {
 // UpdateStateIR MUST be called by the Alphabet member only.
 func UpdateStateIR(state NodeState, publicKey interop.PublicKey) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
-	if notaryDisabled {
-		panic("UpdateStateIR should only be called in notary-enabled environment")
-	}
 
-	common.CheckAlphabetWitness(common.AlphabetAddress())
+	common.CheckAlphabetWitness()
 
 	updateCandidateState(ctx, publicKey, state)
 }
@@ -409,35 +247,8 @@ func UpdateStateIR(state NodeState, publicKey interop.PublicKey) {
 // It produces NewEpoch notification.
 func NewEpoch(epochNum int) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("this method must be invoked by inner ring nodes")
-		}
-	} else {
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-		id := common.InvokeID([]interface{}{epochNum}, []byte("epoch"))
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
+	common.CheckAlphabetWitness()
 
 	currentEpoch := storage.Get(ctx, snapshotEpoch).(int)
 	if epochNum <= currentEpoch {
@@ -535,7 +346,7 @@ func getSnapshotCount(ctx storage.Context) int {
 //
 // Count MUST NOT be negative.
 func UpdateSnapshotCount(count int) {
-	common.CheckAlphabetWitness(common.AlphabetAddress())
+	common.CheckAlphabetWitness()
 	if count < 0 {
 		panic("count must be positive")
 	}
@@ -634,34 +445,8 @@ func Config(key []byte) interface{} {
 // only by Alphabet nodes.
 func SetConfig(id, key, val []byte) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = common.AlphabetNodes()
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("invoked by non inner ring node")
-		}
-	} else {
-		multiaddr := common.AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
+	common.CheckAlphabetWitness()
 
 	setConfig(ctx, key, val)
 
@@ -783,27 +568,4 @@ func cleanup(ctx storage.Context, epoch int) {
 
 	containerContractAddr := storage.Get(ctx, containerContractKey).(interop.Hash160)
 	contract.Call(containerContractAddr, cleanupEpochMethod, contract.All, epoch)
-}
-
-func getIRNodes(ctx storage.Context) []interop.PublicKey {
-	data := storage.Get(ctx, innerRingKey)
-	if data != nil {
-		return std.Deserialize(data.([]byte)).([]interop.PublicKey)
-	}
-
-	return []interop.PublicKey{}
-}
-
-func keysID(args []interop.PublicKey, prefix []byte) []byte {
-	var (
-		result []byte
-	)
-
-	result = append(result, prefix...)
-
-	for i := range args {
-		result = append(result, args[i]...)
-	}
-
-	return crypto.Sha256(result)
 }

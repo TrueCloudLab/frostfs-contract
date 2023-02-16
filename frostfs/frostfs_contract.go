@@ -5,7 +5,6 @@ import (
 	"github.com/nspcc-dev/neo-go/pkg/interop"
 	"github.com/nspcc-dev/neo-go/pkg/interop/contract"
 	"github.com/nspcc-dev/neo-go/pkg/interop/iterator"
-	"github.com/nspcc-dev/neo-go/pkg/interop/native/crypto"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/gas"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/ledger"
 	"github.com/nspcc-dev/neo-go/pkg/interop/native/management"
@@ -48,6 +47,12 @@ var (
 func _deploy(data interface{}, isUpdate bool) {
 	ctx := storage.GetContext()
 
+	//TODO(@acid-ant): #9 remove notaryDisabled from args in future version
+	if data.([]interface{})[0].(bool) {
+		panic(common.PanicMsgForNotaryDisabledEnv)
+	}
+	storage.Delete(ctx, notaryDisabledKey)
+
 	if isUpdate {
 		args := data.([]interface{})
 		common.CheckVersion(args[len(args)-1].(int))
@@ -55,6 +60,7 @@ func _deploy(data interface{}, isUpdate bool) {
 	}
 
 	args := data.(struct {
+		//TODO(@acid-ant): #9 remove notaryDisabled in future version
 		notaryDisabled bool
 		addrProc       interop.Hash160
 		keys           []interop.PublicKey
@@ -81,13 +87,6 @@ func _deploy(data interface{}, isUpdate bool) {
 
 	storage.Put(ctx, processingContractKey, args.addrProc)
 
-	// initialize the way to collect signatures
-	storage.Put(ctx, notaryDisabledKey, args.notaryDisabled)
-	if args.notaryDisabled {
-		common.InitVote(ctx)
-		runtime.Log("frostfs contract notary disabled")
-	}
-
 	ln := len(args.config)
 	if ln%2 != 0 {
 		panic("bad configuration")
@@ -110,23 +109,13 @@ func Update(script []byte, manifest []byte, data interface{}) {
 	alphabetKeys := roles.GetDesignatedByRole(roles.NeoFSAlphabet, uint32(blockHeight+1))
 	alphabetCommittee := common.Multiaddress(alphabetKeys, true)
 
-	common.CheckAlphabetWitness(alphabetCommittee)
+	if !runtime.CheckWitness(alphabetCommittee) {
+		panic(common.ErrAlphabetWitnessFailed)
+	}
 
 	contract.Call(interop.Hash160(management.Hash), "update",
 		contract.All, script, manifest, common.AppendVersion(data))
 	runtime.Log("frostfs contract updated")
-}
-
-// AlphabetList returns an array of alphabet node keys. It is used in sidechain notary
-// disabled environment.
-func AlphabetList() []common.IRNode {
-	ctx := storage.GetReadOnlyContext()
-	pubs := getAlphabetNodes(ctx)
-	nodes := []common.IRNode{}
-	for i := range pubs {
-		nodes = append(nodes, common.IRNode{PublicKey: pubs[i]})
-	}
-	return nodes
 }
 
 // AlphabetAddress returns 2\3n+1 multisignature address of alphabet nodes.
@@ -156,41 +145,14 @@ func InnerRingCandidates() []common.IRNode {
 // This method does not return fee back to the candidate.
 func InnerRingCandidateRemove(key interop.PublicKey) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
-
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
 
 	keyOwner := runtime.CheckWitness(key)
 
 	if !keyOwner {
-		if notaryDisabled {
-			alphabet = getAlphabetNodes(ctx)
-			nodeKey = common.InnerRingInvoker(alphabet)
-			if len(nodeKey) == 0 {
-				panic("this method must be invoked by candidate or alphabet")
-			}
-		} else {
-			multiaddr := AlphabetAddress()
-			if !runtime.CheckWitness(multiaddr) {
-				panic("this method must be invoked by candidate or alphabet")
-			}
+		multiaddr := AlphabetAddress()
+		if !runtime.CheckWitness(multiaddr) {
+			panic("this method must be invoked by candidate or alphabet")
 		}
-	}
-
-	if notaryDisabled && !keyOwner {
-		threshold := len(alphabet)*2/3 + 1
-		id := append(key, []byte("delete")...)
-		hashID := crypto.Sha256(id)
-
-		n := common.Vote(ctx, hashID, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, hashID)
 	}
 
 	prefix := []byte(candidatesKey)
@@ -285,28 +247,15 @@ func Withdraw(user interop.Hash160, amount int) {
 	}
 
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
 	// transfer fee to proxy contract to pay cheque invocation
 	fee := getConfig(ctx, withdrawFeeConfigKey).(int)
 
-	if notaryDisabled {
-		alphabet := getAlphabetNodes(ctx)
-		for _, node := range alphabet {
-			processingAddr := contract.CreateStandardAccount(node)
+	processingAddr := storage.Get(ctx, processingContractKey).(interop.Hash160)
 
-			transferred := gas.Transfer(user, processingAddr, fee, []byte{})
-			if !transferred {
-				panic("failed to transfer withdraw fee, aborting")
-			}
-		}
-	} else {
-		processingAddr := storage.Get(ctx, processingContractKey).(interop.Hash160)
-
-		transferred := gas.Transfer(user, processingAddr, fee, []byte{})
-		if !transferred {
-			panic("failed to transfer withdraw fee, aborting")
-		}
+	transferred := gas.Transfer(user, processingAddr, fee, []byte{})
+	if !transferred {
+		panic("failed to transfer withdraw fee, aborting")
 	}
 
 	// notify alphabet nodes
@@ -322,37 +271,9 @@ func Withdraw(user interop.Hash160, amount int) {
 //
 // This method produces Cheque notification to burn assets in sidechain.
 func Cheque(id []byte, user interop.Hash160, amount int, lockAcc []byte) {
-	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
-
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = getAlphabetNodes(ctx)
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("this method must be invoked by alphabet")
-		}
-	} else {
-		multiaddr := AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
+	common.CheckAlphabetWitness()
 
 	from := runtime.GetExecutingScriptHash()
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
 
 	transferred := gas.Transfer(from, user, amount, nil)
 	if !transferred {
@@ -403,63 +324,6 @@ func Unbind(user []byte, keys []interop.PublicKey) {
 	runtime.Notify("Unbind", user, keys)
 }
 
-// AlphabetUpdate updates a list of alphabet nodes with the provided list of
-// public keys. It can be invoked only by alphabet nodes.
-//
-// This method is used in notary disabled sidechain environment. In this case,
-// the actual alphabet list should be stored in the FrostFS contract.
-func AlphabetUpdate(id []byte, args []interop.PublicKey) {
-	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
-
-	if len(args) == 0 {
-		panic("bad arguments")
-	}
-
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = getAlphabetNodes(ctx)
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(nodeKey) == 0 {
-			panic("this method must be invoked by alphabet")
-		}
-	} else {
-		multiaddr := AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
-
-	newAlphabet := []interop.PublicKey{}
-
-	for i := 0; i < len(args); i++ {
-		pubKey := args[i]
-		if len(pubKey) != interop.PublicKeyCompressedLen {
-			panic("invalid public key in alphabet list")
-		}
-
-		newAlphabet = append(newAlphabet, pubKey)
-	}
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
-
-	common.SetSerialized(ctx, alphabetKey, newAlphabet)
-
-	runtime.Notify("AlphabetUpdate", id, newAlphabet)
-	runtime.Log("alphabet list has been updated")
-}
-
 // Config returns configuration value of FrostFS configuration. If the key does
 // not exists, returns nil.
 func Config(key []byte) interface{} {
@@ -471,34 +335,8 @@ func Config(key []byte) interface{} {
 // only by Alphabet nodes.
 func SetConfig(id, key, val []byte) {
 	ctx := storage.GetContext()
-	notaryDisabled := storage.Get(ctx, notaryDisabledKey).(bool)
 
-	var ( // for invocation collection without notary
-		alphabet []interop.PublicKey
-		nodeKey  []byte
-	)
-
-	if notaryDisabled {
-		alphabet = getAlphabetNodes(ctx)
-		nodeKey = common.InnerRingInvoker(alphabet)
-		if len(key) == 0 {
-			panic("this method must be invoked by alphabet")
-		}
-	} else {
-		multiaddr := AlphabetAddress()
-		common.CheckAlphabetWitness(multiaddr)
-	}
-
-	if notaryDisabled {
-		threshold := len(alphabet)*2/3 + 1
-
-		n := common.Vote(ctx, id, nodeKey)
-		if n < threshold {
-			return
-		}
-
-		common.RemoveVotes(ctx, id)
-	}
+	common.CheckAlphabetWitness()
 
 	setConfig(ctx, key, val)
 
