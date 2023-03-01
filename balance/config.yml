@@ -1,4 +1,4 @@
-name: "FrostFS Balance"
+name: "Balance"
 supportedstandards: ["NEP-17"]
 safemethods: ["balanceOf", "decimals", "symbol", "totalSupply", "version"]
 permissions:

@@ -1,4 +1,4 @@
-name: "FrostFS Container"
+name: "Container"
 safemethods: ["count", "containersOf", "get", "owner", "list", "eACL", "getContainerSize", "listContainerSizes", "iterateContainerSizes", "version"]
 permissions:
   - methods: ["update", "addKey", "transferX",

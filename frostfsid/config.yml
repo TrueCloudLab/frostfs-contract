@@ -1,4 +1,4 @@
-name: "FrostFS ID"
+name: "Identity"
 safemethods: ["key", "version"]
 permissions:
   - methods: ["update"]

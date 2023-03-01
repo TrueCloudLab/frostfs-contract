@@ -1,4 +1,4 @@
-name: "FrostFS Multi Signature Processing"
+name: "Multi Signature Processing"
 safemethods: ["verify", "version"]
 permissions:
   - methods: ["update"]

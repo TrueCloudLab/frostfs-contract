@@ -1,4 +1,4 @@
-name: "FrostFS Reputation"
+name: "Reputation"
 safemethods: ["get", "getByID", "listByEpoch"]
 permissions:
   - methods: ["update"]
