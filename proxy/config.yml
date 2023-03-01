@@ -1,4 +1,4 @@
-name: "FrostFS Notary Proxy"
+name: "Notary Proxy"
 safemethods: ["verify", "version"]
 permissions:
   - methods: ["update"]

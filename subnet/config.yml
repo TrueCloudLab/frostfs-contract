@@ -1,4 +1,4 @@
-name: "FrostFS Subnet"
+name: "Subnet"
 safemethods: ["version"]
 permissions:
   - methods: ["update"]
